@@ -7,13 +7,20 @@ const sendEmail = require('../utils/sendEmail'); // EKLENDİ: Postacımız
 exports.createLeaveRequest = async (req, res) => {
   try {
     const { requestedDate, reason } = req.body;
-    const userId = req.user._id; // İstek atan üye
-
-    // 1. O gün için zaten bir talep var mı?
-    const existingRequest = await LeaveRequest.findOne({ userId, requestedDate: new Date(requestedDate) });
-    if (existingRequest) {
-      return res.status(400).json({ message: 'Bu tarih için zaten bir izin talebiniz bulunuyor!' });
+    
+    // KONTROL 1: Kullanıcı gerçekten giriş yapmış mı?
+    if (!req.user) {
+      return res.status(401).json({ message: 'Kullanıcı bilgisi bulunamadı, lütfen tekrar giriş yapın.' });
     }
+
+    const userId = req.user._id;
+
+    // KONTROL 2: Tarih ve mazeret boş mu?
+    if (!requestedDate || !reason) {
+      return res.status(400).json({ message: 'Lütfen tarih ve mazeret alanlarını doldurun.' });
+    }
+
+    // ... (Geri kalan kodlar aynı)
 
     // 2. Yeni talebi oluştur
     const leaveRequest = new LeaveRequest({
