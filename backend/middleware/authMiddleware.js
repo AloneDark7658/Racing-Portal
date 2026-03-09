@@ -15,18 +15,20 @@ exports.protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // O ID'ye sahip kullanıcıyı veri tabanından bulup, şifresini gizleyerek req.user içine koyuyoruz
-      // Böylece sonraki işlemlerde "Giriş yapan kişi kimdi?" diye veri tabanına tekrar sormamıza gerek kalmıyor
       req.user = await User.findById(decoded.id).select('-password');
 
-      next(); // Güvenlikten geçti, asıl gitmek istediği yere (fonksiyona) devam etsin
+      // DÜZELTME: İşlem başarılıysa fonksiyonu burada bitirip sonraki adıma geçiyoruz.
+      return next(); 
     } catch (error) {
       console.error(error);
-      res.status(401).json({ message: 'Yetkisiz erişim, biletiniz (token) geçersiz veya süresi dolmuş!' });
+      // DÜZELTME: Hata durumunda fonksiyonu sonlandırıp cevap dönüyoruz.
+      return res.status(401).json({ message: 'Yetkisiz erişim, biletiniz (token) geçersiz veya süresi dolmuş!' });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: 'Yetkisiz erişim, bilet (token) bulunamadı!' });
+    // DÜZELTME: Token yoksa fonksiyonu sonlandırıp cevap dönüyoruz.
+    return res.status(401).json({ message: 'Yetkisiz erişim, bilet (token) bulunamadı!' });
   }
 };
 
@@ -34,8 +36,10 @@ exports.protect = async (req, res, next) => {
 exports.admin = (req, res, next) => {
   // Yukarıdaki 'protect' adımını geçen kullanıcının rolü admin veya superadmin mi?
   if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
-    next(); // Adminsin, geçebilirsin
+    // DÜZELTME: Başarılıysa fonksiyonu bitir ve route'a (create) ilerle
+    return next(); 
   } else {
-    res.status(403).json({ message: 'Bu işlemi yapmak için Admin yetkisine sahip olmalısınız!' });
+    // DÜZELTME: Yetki yoksa işlemi durdur ve hata dön
+    return res.status(403).json({ message: 'Bu işlemi yapmak için Admin yetkisine sahip olmalısınız!' });
   }
 };

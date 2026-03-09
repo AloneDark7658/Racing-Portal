@@ -33,9 +33,9 @@ const departmentSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-departmentSchema.pre('save', function(next) {
+// DÜZELTİLEN KISIM: next parametresi ve çağrısı tamamen kaldırıldı.
+departmentSchema.pre('save', function() {
   this.updatedAt = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('Department', departmentSchema);
