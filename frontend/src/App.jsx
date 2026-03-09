@@ -7,11 +7,15 @@ import Dashboard from './pages/Dashboard';
 import LeaveRequest from './pages/LeaveRequest';
 import AdminLeaves from './pages/AdminLeaves';
 import AdminDepartments from './pages/AdminDepartments';
-import AdminAttendanceLog from './pages/AdminAttendanceLog'; // Yukarıya ekle
+import AdminAttendanceLog from './pages/AdminAttendanceLog'; 
 import AdminQR from './pages/AdminQR';
 import DirectScan from './pages/DirectScan';
 import MyPerformance from './pages/MyPerformance';
 import Profile from './pages/Profile';
+
+// --- YENİ EKLENEN DUYURU SAYFALARI ---
+import AdminAnnouncements from './pages/AdminAnnouncements';
+import Announcements from './pages/Announcements';
 
 function App() {
   return (
@@ -27,13 +31,15 @@ function App() {
         <Route path="/my-performance" element={<MyPerformance />} />
         <Route path="/profile" element={<Profile />} />
         
-        {/* BU İKİSİNİ KULLANDIN AMA YUKARIDA ÇAĞIRMAMIŞTIN */}
         <Route path="/admin/qr-generate" element={<AdminQR />} />
         <Route path="/direct-scan/:qrToken" element={<DirectScan />} />
 
-        {/* ADMİN İZİN PANELİ ROTASI */}
         <Route path="/admin/leaves" element={<AdminLeaves />} />
         <Route path="/admin/departments" element={<AdminDepartments />} />
+        
+        {/* --- YENİ EKLENEN DUYURU ROTALARI --- */}
+        <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+        <Route path="/announcements" element={<Announcements />} />
         
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

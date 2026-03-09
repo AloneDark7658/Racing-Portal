@@ -26,6 +26,7 @@ app.use('/api/leave', require('./routes/leaveRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/departments', require('./routes/departmentRoutes'));
+app.use('/api/announcements', require('./routes/announcementRoutes'));
 
 // --- Test Rotası ---
 app.get('/', (req, res) => {
