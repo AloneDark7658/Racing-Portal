@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-// İŞTE BEYAZ EKRANIN SEBEBİ BURASIYDI: ClipboardList ikonunu da ekledik! 👇
-import { LogOut, User, ShieldAlert, Car, CalendarPlus, ClipboardList } from 'lucide-react'; 
+// YENİ: QrCode ikonunu da ekledik
+import { LogOut, User, ShieldAlert, Car, CalendarPlus, ClipboardList, QrCode, TrendingUp, Activity } from 'lucide-react'; 
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -86,34 +86,75 @@ const Dashboard = () => {
               <h3 className="text-lg font-bold text-white">İzin Talebi Oluştur</h3>
               <p className="text-sm text-gray-400 text-center">Antrenman veya toplantılara katılamayacaksan bildir.</p>
             </Link>
-
-            {/* SADECE ADMİNLERİN GÖRECEĞİ İZİN YÖNETİM BUTONU */}
+            
+                  {/* YENİ: SÜRÜCÜ TELEMETRİSİ (Herkes Görebilir ama sadece kendi grafiği) */}
+                <Link 
+                  to="/my-performance" 
+                  className="bg-white/5 border border-blue-500/30 hover:border-blue-500 hover:bg-blue-500/10 transition-all p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer"
+                >
+                  <div className="bg-blue-500/20 p-4 rounded-full text-blue-500 group-hover:scale-110 transition-transform">
+                    <Activity size={32} />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Sürücü Telemetrisi</h3>
+                  <p className="text-sm text-gray-400 text-center">Kendi performans grafiğini ve devamlılığını incele.</p>
+                </Link>
+            {/* SADECE ADMİNLERİN GÖRECEĞİ BUTONLAR */}
             {(user.role === 'admin' || user.role === 'superadmin') && (
-              <Link 
-                to="/admin/leaves" 
-                className="bg-white/5 border border-yellow-500/30 hover:border-yellow-500 hover:bg-yellow-500/10 transition-all p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer"
-              >
-                <div className="bg-yellow-500/20 p-4 rounded-full text-yellow-500 group-hover:scale-110 transition-transform">
-                  <ClipboardList size={32} />
-                </div>
-                <h3 className="text-lg font-bold text-white">İzinleri Yönet</h3>
-                <p className="text-sm text-gray-400 text-center">Takımdan gelen izin taleplerini onayla veya reddet.</p>
-              </Link>
+              <>
+                <Link 
+                  to="/admin/leaves" 
+                  className="bg-white/5 border border-yellow-500/30 hover:border-yellow-500 hover:bg-yellow-500/10 transition-all p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer"
+                >
+                  <div className="bg-yellow-500/20 p-4 rounded-full text-yellow-500 group-hover:scale-110 transition-transform">
+                    <ClipboardList size={32} />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">İzinleri Yönet</h3>
+                  <p className="text-sm text-gray-400 text-center">Takımdan gelen izin taleplerini onayla veya reddet.</p>
+                </Link>
+
+                {/* YENİ: QR OLUŞTURMA BUTONU (Sadece Admin) */}
+                <Link 
+                  to="/admin/qr-generate" 
+                  className="bg-white/5 border border-blue-500/30 hover:border-blue-500 hover:bg-blue-500/10 transition-all p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer"
+                >
+                  <div className="bg-blue-500/20 p-4 rounded-full text-blue-500 group-hover:scale-110 transition-transform">
+                    <QrCode size={32} />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Yoklama Başlat</h3>
+                  <p className="text-sm text-gray-400 text-center">Günün antrenmanı için QR kod panosunu aç.</p>
+                </Link>
+
+                  {/* YENİ: RAPORLAR & ANALİZ BUTONU (Sadece Admin) */}
+                <Link 
+                  to="/admin/attendance-log" 
+                  className="bg-white/5 border border-green-500/30 hover:border-green-500 hover:bg-green-500/10 transition-all p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer"
+                >
+                  <div className="bg-green-500/20 p-4 rounded-full text-green-500 group-hover:scale-110 transition-transform">
+                    <TrendingUp size={32} />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Raporlar & Analiz</h3>
+                  <p className="text-sm text-gray-400 text-center">Takımın devamlılık grafiğini ve özetini incele.</p>
+                </Link>
+              </>
+
+                
             )}
 
-            {/* ÇOK YAKINDA BUTONU */}
-            <div className="bg-white/5 border border-white/10 p-6 rounded-xl flex flex-col items-center justify-center gap-3 opacity-50">
-              <div className="bg-gray-600/20 p-4 rounded-full text-gray-400">
-                <Car size={32} />
+            {/* NORMAL ÜYELER İÇİN ÇOK YAKINDA KUTUSU (Adminlerde yer kalmadığı için gizlenebilir veya kalabilir) */}
+            {(user.role === 'user') && (
+              <div className="bg-white/5 border border-white/10 p-6 rounded-xl flex flex-col items-center justify-center gap-3 opacity-50">
+                <div className="bg-gray-600/20 p-4 rounded-full text-gray-400">
+                  <Car size={32} />
+                </div>
+                <h3 className="text-lg font-bold text-gray-400">Pist İstatistikleri</h3>
+                <p className="text-sm text-gray-500 text-center">Çok yakında burada olacak.</p>
               </div>
-              <h3 className="text-lg font-bold text-gray-400">Çok Yakında</h3>
-              <p className="text-sm text-gray-500 text-center">Yeni özellikler yolda.</p>
-            </div>
+            )}
             
           </div>
 
           <div className="p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-lg text-yellow-500">
-            🚧 <strong>Yapım Aşamasında:</strong> Yakında buraya kişisel istatistikleriniz ve yoklama bilgileriniz gelecek!
+            🚧 <strong>Bilgi:</strong> Yoklama okutmak için telefonunuzun kamerasını açıp adminin ekranındaki QR kodu okutmanız yeterlidir.
           </div>
         </div>
       </main>

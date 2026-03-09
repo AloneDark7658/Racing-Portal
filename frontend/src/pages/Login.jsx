@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate, Link } from 'react-router-dom'; // Link eklendi
+import { useNavigate, Link, useLocation } from 'react-router-dom'; // useLocation eklendi
 import { LogIn, User, Lock, Loader2 } from 'lucide-react';
 
 const Login = () => {
@@ -10,6 +10,7 @@ const Login = () => {
   const [error, setError] = useState('');
   
   const navigate = useNavigate();
+  const location = useLocation(); // YENİ: Nereden geldiğimizi anlamak için
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -19,12 +20,15 @@ const Login = () => {
     try {
       const { data } = await axios.post('http://localhost:5000/api/auth/login', { email, password });
       
-      // Token'ı ve kullanıcı bilgilerini tarayıcıya kaydet
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Giriş başarılıysa Dashboard'a yönlendir
-      navigate('/dashboard');
+      // YENİ: Akıllı Yönlendirme Mantığı
+      // Eğer bir sayfadan (örneğin QR sayfası) buraya şutlandıysak oraya geri dön, 
+      // yoksa normal Dashboard'a git.
+      const origin = location.state?.from?.pathname || '/dashboard';
+      navigate(origin);
+
     } catch (err) {
       setError(err.response?.data?.message || 'Giriş yapılamadı. Bilgileri kontrol edin.');
     } finally {
@@ -34,7 +38,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Arka plan süslemesi (Yarış çizgisi efekti) */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-600 to-transparent opacity-50"></div>
       
       <div className="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
@@ -53,7 +56,7 @@ const Login = () => {
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div className="relative">
-            <User className="absolute left-3 top-3 text-gray-500 size={20}" />
+            <User className="absolute left-3 top-3 text-gray-500" size={20} />
             <input
               type="email"
               placeholder="E-posta"
@@ -65,7 +68,7 @@ const Login = () => {
           </div>
 
           <div className="relative">
-            <Lock className="absolute left-3 top-3 text-gray-500 size={20}" />
+            <Lock className="absolute left-3 top-3 text-gray-500" size={20} />
             <input
               type="password"
               placeholder="Şifre"
@@ -76,7 +79,6 @@ const Login = () => {
             />
           </div>
 
-          {/* Şifremi Unuttum Linki Buraya Eklendi */}
           <div className="flex justify-end mt-[-10px] mb-2">
             <Link to="/forgot-password" className="text-sm text-gray-400 hover:text-red-500 transition-colors">
               Şifremi unuttum
