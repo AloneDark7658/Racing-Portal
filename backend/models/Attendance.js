@@ -26,7 +26,14 @@ const attendanceSchema = new mongoose.Schema({
     type: String, 
     enum: ['green', 'yellow', 'orange', 'red', 'gray'], 
     default: 'gray'
+  },
+
+  // --- YENİ: Mesai bitimi çıkış saati ---
+  checkOutTime: { 
+    type: Date,
+    default: null
   }
+
 });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

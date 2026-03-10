@@ -1,1 +1,45 @@
 @import "tailwindcss";
+
+/* --- QR KOD OKUYUCU (GÜVENLİ TASARIM) --- */
+#reader {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 1rem;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Ana Butonlar */
+#reader button {
+  background-color: #dc2626 !important;
+  color: white !important;
+  font-weight: 600 !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  cursor: pointer !important;
+  margin: 5px !important;
+}
+
+#reader button:hover {
+  background-color: #b91c1c !important;
+}
+
+/* Linkler (Scan an Image File vb.) */
+#reader a {
+  color: #60a5fa !important; /* Mavi renk yaptık belli olsun */
+  text-decoration: underline !important;
+  cursor: pointer !important;
+  font-weight: bold !important;
+  display: inline-block !important;
+  margin: 10px !important;
+}
+
+/* Seçim Menüleri */
+#reader select {
+  background-color: #1f2937 !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 8px !important;
+  border-radius: 6px !important;
+  margin-bottom: 10px !important;
+}

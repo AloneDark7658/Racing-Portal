@@ -123,6 +123,14 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {/* Ortak Butonlar */}
+          {/* YENİ EKLENEN: YOKLAMA OKUTMA BUTONU */}
+          <Link to="/direct-scan" className="bg-white/5 border border-green-500/30 hover:border-green-500 hover:bg-green-500/10 transition-all p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer">
+            <div className="bg-green-500/20 p-4 rounded-full text-green-500 group-hover:scale-110 transition-transform">
+              <QrCode size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-white">Yoklama Okut</h3>
+            <p className="text-sm text-gray-400 text-center">Kameranızı açarak piste giriş/çıkış yapın.</p>
+          </Link>
           <Link to="/profile" className="bg-white/5 border border-white/10 hover:border-red-500/50 hover:bg-red-500/10 transition-all p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer">
             <div className="bg-red-600/20 p-4 rounded-full text-red-500 group-hover:scale-110 transition-transform">
               <Settings size={32} />

@@ -32,6 +32,12 @@ const userSchema = new mongoose.Schema({
     type: Date, 
     default: Date.now 
   },
+
+  // --- YENİ: Başka telefondan QR okutmayı engellemek için ---
+  deviceId: { 
+    type: String, 
+    default: null 
+  },
   
   // --- ŞİFRE SIFIRLAMA İÇİN EKLENEN YENİ ALANLAR ---
   resetPasswordToken: String,

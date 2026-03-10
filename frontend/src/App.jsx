@@ -32,7 +32,6 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         
         <Route path="/admin/qr-generate" element={<AdminQR />} />
-        <Route path="/direct-scan/:qrToken" element={<DirectScan />} />
 
         <Route path="/admin/leaves" element={<AdminLeaves />} />
         <Route path="/admin/departments" element={<AdminDepartments />} />
@@ -40,6 +39,8 @@ function App() {
         {/* --- YENİ EKLENEN DUYURU ROTALARI --- */}
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />
         <Route path="/announcements" element={<Announcements />} />
+
+        <Route path="/direct-scan" element={<DirectScan />} />
         
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

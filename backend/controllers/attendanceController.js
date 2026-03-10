@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto'); // YENİ: Benzersiz, tek kullanımlık şifreler üretmek için eklendi
 const Attendance = require('../models/Attendance');
 const AttendanceSession = require('../models/AttendanceSession'); 
 const User = require('../models/User');
@@ -37,17 +38,15 @@ exports.generateQR = async (req, res) => {
     let session = await AttendanceSession.findOne({ date: todayDate });
 
     if (session) {
-      return res.status(200).json({ 
-        qrData: session.qrData, 
-        startTime: session.startTime, 
-        message: 'Mevcut oturum getirildi.' 
-      });
+      return res.status(200).json({ qrData: session.qrData, startTime: session.startTime, message: 'Mevcut oturum getirildi.' });
     }
 
+    // YENİ: QR'ın benzersiz (kopyalanamaz) olması için 'salt' ekledik
     const qrPayload = {
       purpose: 'itu_racing_attendance',
       date: todayStr,
-      startTime: startTime || '18:00'
+      startTime: startTime || '18:00',
+      salt: crypto.randomBytes(8).toString('hex') 
     };
 
     const qrData = jwt.sign(qrPayload, process.env.JWT_SECRET, { expiresIn: '12h' });
@@ -60,12 +59,7 @@ exports.generateQR = async (req, res) => {
     });
 
     await session.save();
-
-    res.status(201).json({ 
-      qrData: session.qrData, 
-      startTime: session.startTime, 
-      message: 'Yeni oturum başarıyla oluşturuldu! 🏁' 
-    });
+    res.status(201).json({ qrData: session.qrData, startTime: session.startTime, message: 'Yeni oturum oluşturuldu!' });
   } catch (error) {
     res.status(500).json({ message: 'Oturum yönetimi hatası!' });
   }
@@ -74,7 +68,7 @@ exports.generateQR = async (req, res) => {
 // 3. QR OKUTMA (Üyeler için)
 exports.scanQR = async (req, res) => {
   try {
-    const { qrToken } = req.body;
+    const { qrToken, deviceId } = req.body; // Frontend'den cihaz kimliği de gelecek
     const userId = req.user._id;
 
     const decoded = jwt.verify(qrToken, process.env.JWT_SECRET);
@@ -84,29 +78,78 @@ exports.scanQR = async (req, res) => {
       return res.status(400).json({ message: 'Bu QR dünden kalmış veya geçersiz!' });
     }
 
-    const scanTime = new Date();
-    const [h, m] = decoded.startTime.split(':');
-    const targetTime = new Date();
-    targetTime.setHours(parseInt(h), parseInt(m), 0, 0);
-
-    let delay = 0;
-    if (scanTime > targetTime) {
-      delay = Math.floor((scanTime - targetTime) / (1000 * 60));
+    // A) KAREKOD YANMIŞ MI KONTROLÜ (Sadece veritabanındaki güncel QR kabul edilir)
+    const session = await AttendanceSession.findOne({ date: new Date(todayStr) });
+    if (!session || session.qrData !== qrToken) {
+      return res.status(400).json({ 
+        message: 'Bu karekod az önce başkası tarafından kullanıldı (Süresi doldu)! Lütfen ekrandaki yeni karekodu okutun.' 
+      });
     }
 
-    let color = 'green';
-    if (delay > 0 && delay <= 15) color = 'yellow';
-    else if (delay > 15 && delay <= 30) color = 'orange';
-    else if (delay > 30) color = 'red';
+    // B) CİHAZ (DEVICE ID) EŞLEŞTİRMESİ
+    const user = await User.findById(userId);
+    if (!user.deviceId) {
+      // Üye ilk kez okutuyor, cihazı mühürle
+      user.deviceId = deviceId;
+      await user.save();
+    } else if (user.deviceId !== deviceId) {
+      // Başka telefondan kopya girişimi!
+      return res.status(403).json({ 
+        message: 'Güvenlik İhlali: Bu cihaz hesabınızla eşleşmiyor. Lütfen kendi telefonunuzu kullanın.' 
+      });
+    }
 
-    const attendance = await Attendance.findOneAndUpdate(
-      { userId, date: new Date(todayStr) },
-      { status: 'Geldi', scanTime, delayMinutes: delay, colorCode: color },
-      { upsert: true, new: true }
-    );
+    // C) YOKLAMA KAYDI (Giriş veya Çıkış)
+    let attendance = await Attendance.findOne({ userId, date: new Date(todayStr) });
+    const scanTime = new Date();
+    let responseMessage = '';
 
-    res.status(200).json({ message: 'Piste giriş başarılı! ✅', delay, color });
+    if (!attendance) {
+      // --- GİRİŞ İŞLEMİ (Eski algoritman korundu) ---
+      const [h, m] = session.startTime.split(':');
+      const targetTime = new Date();
+      targetTime.setHours(parseInt(h), parseInt(m), 0, 0);
+
+      let delay = 0;
+      if (scanTime > targetTime) {
+        delay = Math.floor((scanTime - targetTime) / (1000 * 60));
+      }
+
+      let color = 'green';
+      if (delay > 0 && delay <= 15) color = 'yellow';
+      else if (delay > 15 && delay <= 30) color = 'orange';
+      else if (delay > 30) color = 'red';
+
+      await Attendance.create({
+        userId,
+        date: new Date(todayStr),
+        scanTime,
+        status: 'Geldi',
+        delayMinutes: delay,
+        colorCode: color
+      });
+      responseMessage = 'Piste giriş başarılı! İyi mesailer. ✅';
+    } else {
+      // --- ÇIKIŞ İŞLEMİ ---
+      attendance.checkOutTime = scanTime;
+      await attendance.save();
+      responseMessage = 'Çıkış saatiniz güncellendi. İyi dinlenmeler! 🏁';
+    }
+
+    // D) KAREKODU YAK VE YENİSİNİ ÜRET
+    const newToken = jwt.sign({
+      purpose: 'itu_racing_attendance',
+      date: todayStr,
+      startTime: session.startTime,
+      salt: crypto.randomBytes(8).toString('hex') // Karekodu değiştiren sihirli tuz
+    }, process.env.JWT_SECRET);
+    
+    session.qrData = newToken;
+    await session.save();
+
+    res.status(200).json({ message: responseMessage });
   } catch (error) {
+    console.error(error);
     res.status(400).json({ message: 'Geçersiz QR kod!' });
   }
 };

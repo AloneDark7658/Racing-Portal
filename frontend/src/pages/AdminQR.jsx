@@ -1,147 +1,114 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { QRCodeCanvas } from 'qrcode.react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, QrCode, CheckCircle, Users, Clock, Loader2 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ShieldCheck, Loader2, RefreshCcw } from 'lucide-react';
+
+const API = 'http://localhost:5000/api';
 
 const AdminQR = () => {
-  const [qrData, setQrData] = useState('');
-  const [startTime, setStartTime] = useState('18:00');
-  const [isExisting, setIsExisting] = useState(false);
-  const [attendees, setAttendees] = useState([]);
-  const [loadingList, setLoadingList] = useState(true);
-
+  const [qrToken, setQrToken] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        const { data } = await axios.get('http://localhost:5000/api/attendance/active-session', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (data) {
-          setQrData(data.qrData);
-          setStartTime(data.startTime);
-          setIsExisting(true);
-        }
-      } catch (err) {}
-    };
-    if(token) fetchSession();
-  }, [token]);
-
-  useEffect(() => {
-    const fetchAttendees = async () => {
-      try {
-        const { data } = await axios.get('http://localhost:5000/api/attendance/today', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setAttendees(Array.isArray(data) ? data : []);
-      } catch (err) {
-        setAttendees([]);
-      } finally {
-        setLoadingList(false);
-      }
-    };
-
-    if(token) {
-      fetchAttendees(); 
-      const interval = setInterval(fetchAttendees, 5000); 
-      return () => clearInterval(interval); 
-    }
-  }, [token]);
-
-  const handleGenerate = async () => {
+  // KAREKODU GETİREN FONKSİYON
+  // KAREKODU GETİREN FONKSİYON
+  const fetchQR = async () => {
     try {
-      const { data } = await axios.post('http://localhost:5000/api/attendance/generate', 
-        { startTime },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setQrData(data.qrData);
-      setIsExisting(true);
+      // DÜZELTME: GET yerine POST yapıyoruz ve /generate kullanıyoruz
+      const response = await axios.post(`${API}/attendance/generate`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // DÜZELTME: Senin backend'in veriyi 'qrData' olarak gönderiyor
+      if (response.data.qrData !== qrToken) {
+        setQrToken(response.data.qrData);
+      }
+      setError('');
     } catch (err) {
-      alert("QR oluşturulamadı!");
+      setError(err.response?.data?.message || 'Karekod alınamadı.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    // Sayfa açıldığında ilk karekodu çek
+    fetchQR();
+
+    // SİHİR BURADA: Her 2 saniyede bir karekod değişmiş mi diye kontrol et
+    const interval = setInterval(() => {
+      fetchQR();
+    }, 2000); // 2000 milisaniye = 2 saniye
+
+    return () => clearInterval(interval); // Sayfadan çıkıldığında döngüyü durdur
+  }, [token, navigate, qrToken]);
+
+  // Karekodun tam linki (Öğrenci okuttuğunda bu linke veya sadece şifreye gidebilir, 
+  // biz sadece QR token'ın kendisini koda gömeceğiz çünkü DirectScan direkt onu okuyor)
+  const qrValue = qrToken; 
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <Link to="/dashboard" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-8 transition-colors text-sm">
-          <ArrowLeft size={18} /> Dashboard'a Dön
-        </Link>
+    <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col items-center justify-center p-4">
+      
+      <Link to="/dashboard" className="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+        <ArrowLeft size={24} /> <span className="font-bold">Panoya Dön</span>
+      </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* SOL TARAF: QR KOD (PERFORMANS AYARI: Blur kaldırıldı, gölge sadeleşti) */}
-          <div className="lg:col-span-5 bg-[#141414] p-8 rounded-3xl border border-white/10 shadow-xl h-fit">
-            <h1 className="text-xl font-black italic mb-6 text-center uppercase tracking-tighter">
-              YOKLAMA <span className="text-red-600">MASASI</span>
-            </h1>
+      <div className="w-full max-w-2xl bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl flex flex-col items-center relative overflow-hidden">
+        
+        {/* Dekoratif Arka Plan Işığı */}
+        <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-red-600/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-            {isExisting ? (
-              <div className="bg-green-500/10 border border-green-500/30 p-3 rounded-xl mb-6 flex items-center justify-center gap-2 text-green-500 text-xs font-bold">
-                <CheckCircle size={14} /> OTURUM AKTİF
-              </div>
-            ) : (
-              <div className="space-y-4 mb-8">
-                <input 
-                  type="time" 
-                  className="w-full bg-black/40 border border-white/10 p-4 rounded-xl text-2xl font-mono text-center outline-none focus:border-red-600 transition-colors"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-                <button 
-                  onClick={handleGenerate}
-                  className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-xl font-black uppercase tracking-widest transition-all active:scale-95"
-                >
-                  BAŞLAT
-                </button>
-              </div>
-            )}
-
-            {qrData && (
-              <div className="flex flex-col items-center">
-                {/* Ağır gölge (blur-50px) yerine ince glow (blur-sm) kullanıyoruz */}
-                <div className="bg-white p-4 rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                  <QRCodeCanvas value={`${window.location.origin}/direct-scan/${qrData}`} size={220} level="M" />
-                </div>
-                <p className="mt-4 text-2xl font-black">{startTime}</p>
-                <p className="text-gray-500 text-[10px] uppercase font-bold tracking-tighter">Pist Açılış Saati</p>
-              </div>
-            )}
-          </div>
-
-          {/* SAĞ TARAF: LİSTE (PERFORMANS AYARI: Transition-all kaldırıldı) */}
-          <div className="lg:col-span-7 bg-[#141414] border border-white/10 rounded-3xl p-6">
-            <h2 className="text-lg font-bold flex items-center gap-2 mb-6 border-b border-white/5 pb-4">
-              <Users className="text-red-500" size={20} /> Canlı Paddock
-            </h2>
-
-            {loadingList ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-red-600" /></div>
-            ) : attendees.length === 0 ? (
-              <div className="text-center py-12 text-gray-600 text-sm italic">Bekleniyor...</div>
-            ) : (
-              <div className="space-y-2">
-                {attendees.map((att) => (
-                  <div key={att._id} className="bg-black/20 border border-white/5 p-4 rounded-xl flex items-center justify-between hover:bg-white/5 cursor-default">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${
-                        att.colorCode === 'green' ? 'bg-green-500' : 
-                        att.colorCode === 'yellow' ? 'bg-yellow-400' : 'bg-red-600'
-                      }`}></div>
-                      <span className="font-bold text-sm">{att.userId?.name}</span>
-                    </div>
-                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">
-                      {new Date(att.scanTime).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
+        <div className="text-center mb-8 relative z-10">
+          <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter mb-2">
+            İTÜ <span className="text-red-600">RACING</span>
+          </h1>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-300">GÜNLÜK YOKLAMA SİSTEMİ</h2>
         </div>
+
+        <div className="bg-white p-6 md:p-8 rounded-3xl shadow-[0_0_50px_rgba(220,38,38,0.2)] mb-8 relative z-10 transition-all duration-300 transform hover:scale-105">
+          {loading && !qrToken ? (
+            <div className="w-[250px] h-[250px] flex flex-col items-center justify-center">
+              <Loader2 className="animate-spin text-red-600 mb-4" size={48} />
+              <p className="text-black font-bold text-sm">Oluşturuluyor...</p>
+            </div>
+          ) : error ? (
+            <div className="w-[250px] h-[250px] flex flex-col items-center justify-center text-center">
+              <p className="text-red-600 font-bold mb-4">{error}</p>
+              <button onClick={fetchQR} className="flex items-center gap-2 bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold">
+                <RefreshCcw size={16} /> Yenile
+              </button>
+            </div>
+          ) : (
+            <QRCodeSVG 
+              value={qrValue} 
+              size={280}
+              level={"H"}
+              includeMargin={true}
+              className="rounded-xl"
+            />
+          )}
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-center md:text-left w-full max-w-md relative z-10 bg-black/40 p-4 rounded-2xl border border-white/5">
+          <ShieldCheck className="text-green-500 flex-shrink-0" size={32} />
+          <div>
+            <h3 className="font-bold text-white mb-1">Dinamik Güvenlik Aktif</h3>
+            <p className="text-xs text-gray-400">
+              Bu karekod tek kullanımlıktır. Bir üye okuttuğu an anında yenilenir. Lütfen kendi cihazınızı kullanınız.
+            </p>
+          </div>
+        </div>
+
       </div>
     </div>
   );
