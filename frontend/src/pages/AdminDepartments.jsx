@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 const DAY_NAMES = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-const API = 'http://localhost:5000/api';
+import { API_URL as API } from '../config';
 const DEPT_API = `${API}/departments`;
 const USER_API = `${API}/users`;
 

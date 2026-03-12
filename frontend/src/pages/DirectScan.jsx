@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, CheckCircle, XCircle, Loader2, ArrowLeft } from 'lucide-react';
 
-const API = 'http://localhost:5000/api';
+import { API_URL as API } from '../config';
 
 const DirectScan = () => {
   const [scanResult, setScanResult] = useState(null);

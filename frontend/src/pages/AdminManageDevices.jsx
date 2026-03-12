@@ -3,7 +3,7 @@ import axios from 'axios';
 import { ArrowLeft, Smartphone, Trash2, Search, UserCheck, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const API = 'http://localhost:5000/api';
+import { API_URL as API } from '../config';
 
 const AdminManageDevices = () => {
   const [users, setUsers] = useState([]);

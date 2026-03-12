@@ -15,7 +15,15 @@ connectDB();
 // 3. Express uygulamamızı başlatıyoruz
 const app = express();
 
-app.use(cors()); 
+// backend/server.js
+// Hem yerel React portuna (5173) hem de canlıya alındığındaki adrese izin ver
+app.use(cors({
+  origin: [
+    'http://localhost:5173', 
+    process.env.FRONTEND_URL // Deploy edildiğinde bu değişken devreye girecek
+  ],
+  credentials: true
+}));
 app.use(express.json()); 
 
 // --- ROTALAR (API Uç Noktaları) ---

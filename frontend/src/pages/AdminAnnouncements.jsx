@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Megaphone, Plus, Trash2, Loader2, Send, Clock } from 'lucide-react'; // Clock eklendi
 
-const API = 'http://localhost:5000/api';
+import { API_URL as API } from '../config';
 
 const AdminAnnouncements = () => {
   const [announcements, setAnnouncements] = useState([]);

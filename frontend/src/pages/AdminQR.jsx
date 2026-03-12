@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, Loader2, RefreshCcw, Users } from 'lucide-react';
 
-const API = 'http://localhost:5000/api';
+import { API_URL as API } from '../config';
 
 const AdminQR = () => {
   const [qrToken, setQrToken] = useState('');

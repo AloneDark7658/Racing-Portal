@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 // X ikonunu da ekledik (Modalı kapatmak için)
 import { LogOut, User, ShieldAlert, Car, CalendarPlus, ClipboardList, QrCode, TrendingUp, Activity, Settings, Building2, Megaphone, Bell, X } from 'lucide-react'; 
 
-const API = 'http://localhost:5000/api';
+import { API_URL as API } from '../config';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
