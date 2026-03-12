@@ -93,7 +93,7 @@ exports.forgotPassword = async (req, res) => {
     await user.save();
 
     // 4. Frontend'deki (React) şifre sıfırlama sayfamızın linkini hazırla
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
     // 5. Postacıyı (Resend) çağır ve maili yolla
     const message = `İTÜ Racing hesabınızın şifresini sıfırlamak için bir talepte bulundunuz.\n\nŞifrenizi sıfırlamak için lütfen aşağıdaki linke tıklayın (Link 10 dakika geçerlidir):\n\n${resetUrl}\n\nEğer bu talebi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.`;
