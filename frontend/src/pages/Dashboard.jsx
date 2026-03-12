@@ -202,7 +202,7 @@ const Dashboard = () => {
         </div>
 
         <div className="p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-lg text-yellow-500">
-          🚧 <strong>Bilgi:</strong> Yoklama okutmak için telefonunuzun kamerasını açıp adminin ekranındaki QR kodu okutmanız yeterlidir.
+          🚧 <strong>Bilgi:</strong> Yoklama okutabilmek için admininizin açtığı qr kodu, "Yoklama Okut" sekmesinden kameranızı açıp qr kodu okutmanız gerekmektedir.
         </div>
       </main>
 
