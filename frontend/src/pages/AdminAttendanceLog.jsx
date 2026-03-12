@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, X, Loader2, CalendarDays, AlertCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -16,7 +17,7 @@ const AdminAttendanceLog = () => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/attendance/summary', {
+        const { data } = await axios.get(`${API_URL}/attendance/summary`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSummary(data);
@@ -33,7 +34,7 @@ const AdminAttendanceLog = () => {
     setSelectedUser(userName);
     setGraphLoading(true);
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/attendance/graph/${userId}`, {
+      const { data } = await axios.get(`${API_URL}/attendance/graph/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setGraphData(data);

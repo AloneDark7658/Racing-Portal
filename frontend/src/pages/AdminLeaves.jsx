@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, X, Clock, User, Calendar as CalendarIcon, FileText, RotateCcw, ListFilter } from 'lucide-react';
 
@@ -25,7 +26,7 @@ const AdminLeaves = () => {
     }
 
     try {
-      const { data } = await axios.get('http://localhost:5000/api/leave', {
+      const { data } = await axios.get(`${API_URL}/leave`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setLeaves(data);
@@ -40,7 +41,7 @@ const AdminLeaves = () => {
     const token = localStorage.getItem('token');
     try {
       await axios.put(
-        `http://localhost:5000/api/leave/${id}/status`,
+        `${API_URL}/leave/${id}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );

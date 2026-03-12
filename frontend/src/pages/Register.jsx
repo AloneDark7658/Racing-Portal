@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, User, Mail, Lock, CreditCard, Loader2 } from 'lucide-react';
 
@@ -21,7 +22,7 @@ const Register = () => {
     setError('');
 
     try {
-      await axios.post('http://localhost:5000/api/auth/register', formData);
+      await axios.post(`${API_URL}/auth/register`, formData);
       // Kayıt başarılıysa direkt Login sayfasına gönder
       navigate('/login');
     } catch (err) {

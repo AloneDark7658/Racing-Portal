@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Lock, Loader2, CheckCircle } from 'lucide-react';
 
@@ -27,7 +28,7 @@ const ResetPassword = () => {
     }
 
     try {
-      const { data } = await axios.put(`http://localhost:5000/api/auth/resetpassword/${token}`, { password });
+      const { data } = await axios.put(`${API_URL}/auth/resetpassword/${token}`, { password });
       setMessage(data.message);
       
       // Başarılı olursa 3 saniye sonra Login'e yönlendir

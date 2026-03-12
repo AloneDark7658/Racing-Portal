@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Activity, CheckCircle, AlertTriangle, XOctagon, Loader2, Gauge, CalendarDays } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -15,8 +16,8 @@ const MyPerformance = () => {
     const fetchData = async () => {
       try {
         const [summaryRes, graphRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/attendance/my-summary', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:5000/api/attendance/my-graph', { headers: { Authorization: `Bearer ${token}` } })
+          axios.get(`${API_URL}/attendance/my-summary`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/attendance/my-graph`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
         setSummary(summaryRes.data);
