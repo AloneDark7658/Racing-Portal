@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, Loader2, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Loader2, RefreshCcw, Users } from 'lucide-react';
 
 const API = 'http://localhost:5000/api';
 
@@ -62,7 +62,9 @@ const AdminQR = () => {
       <Link to="/dashboard" className="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors flex items-center gap-2">
         <ArrowLeft size={24} /> <span className="font-bold">Panoya Dön</span>
       </Link>
-
+      <Link to="/admin/manage-devices" className="absolute top-6 right-6 bg-red-600/10 hover:bg-red-600/20 border border-red-600/20 text-red-600 px-4 py-2 rounded-xl transition-all flex items-center gap-2 font-bold text-sm">
+        <Users size={18} /> Cihazları Yönet
+      </Link>      
       <div className="w-full max-w-2xl bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl flex flex-col items-center relative overflow-hidden">
         
         {/* Dekoratif Arka Plan Işığı */}
@@ -90,11 +92,11 @@ const AdminQR = () => {
             </div>
           ) : (
             <QRCodeSVG 
-              value={qrValue} 
-              size={280}
-              level={"H"}
-              includeMargin={true}
-              className="rounded-xl"
+            value={qrValue} 
+            size={280}
+            level={"L"}
+            includeMargin={true} // Bunu geri ekle! 👈
+            className="rounded-xl"
             />
           )}
         </div>

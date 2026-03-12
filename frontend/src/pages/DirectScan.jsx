@@ -72,7 +72,9 @@ const DirectScan = () => {
     };
   }, [navigate]);
 
+  
   const processQRCode = async (scannedToken) => {
+    console.log("Okunan Token:", scannedToken); // Bunu ekle
     setLoading(true);
     setError(null);
     setScanResult(null);

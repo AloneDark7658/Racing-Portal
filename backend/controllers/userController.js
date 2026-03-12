@@ -86,3 +86,34 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ message: 'Sunucu hatası oluştu.' });
   }
 };
+
+// backend/controllers/userController.js içine ekle
+
+// --- ADMIN: Kullanıcının cihaz kilidini sıfırla ---
+exports.resetDeviceId = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+
+    user.deviceId = null; // Cihaz kimliğini siliyoruz
+    await user.save();
+
+    res.status(200).json({ message: `${user.name} kullanıcısının cihaz kilidi sıfırlandı. ✅` });
+  } catch (error) {
+    res.status(500).json({ message: 'Cihaz sıfırlama işlemi başarısız.' });
+  }
+};
+
+exports.listAll = async (req, res) => {
+  try {
+    // DÜZELTME: .select() içine 'deviceId' eklendi!
+    const users = await User.find()
+      .select('name email studentId role departmentId deviceId') 
+      .populate('departmentId', 'name')
+      .sort({ name: 1 })
+      .lean();
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Kullanıcılar yüklenemedi.' });
+  }
+};

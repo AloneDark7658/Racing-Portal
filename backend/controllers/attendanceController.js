@@ -69,6 +69,10 @@ exports.generateQR = async (req, res) => {
 exports.scanQR = async (req, res) => {
   try {
     const { qrToken, deviceId } = req.body; // Frontend'den cihaz kimliği de gelecek
+    console.log("Gelen Token:", qrToken); // Bunu ekle
+    console.log("Gelen Cihaz ID:", deviceId); // Bunu ekle
+
+
     const userId = req.user._id;
 
     const decoded = jwt.verify(qrToken, process.env.JWT_SECRET);

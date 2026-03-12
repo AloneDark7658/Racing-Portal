@@ -12,6 +12,7 @@ import AdminQR from './pages/AdminQR';
 import DirectScan from './pages/DirectScan';
 import MyPerformance from './pages/MyPerformance';
 import Profile from './pages/Profile';
+import AdminManageDevices from './pages/AdminManageDevices';
 
 // --- YENİ EKLENEN DUYURU SAYFALARI ---
 import AdminAnnouncements from './pages/AdminAnnouncements';
@@ -30,7 +31,7 @@ function App() {
         <Route path="/admin/attendance-log" element={<AdminAttendanceLog />} />
         <Route path="/my-performance" element={<MyPerformance />} />
         <Route path="/profile" element={<Profile />} />
-        
+        <Route path="/admin/manage-devices" element={<AdminManageDevices />} />
         <Route path="/admin/qr-generate" element={<AdminQR />} />
 
         <Route path="/admin/leaves" element={<AdminLeaves />} />
