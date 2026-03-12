@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, CreditCard, Lock, Loader2, ArrowLeft, Save, CheckCircle, AlertCircle } from 'lucide-react';
+// 1. ADIM: API_URL'i config dosyasından içe aktarıyoruz
+import { API_URL } from '../config'; 
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);
@@ -26,11 +28,13 @@ const Profile = () => {
       return;
     }
     fetchProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, token]);
 
   const fetchProfile = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/users/me', {
+      // 2. ADIM: Dinamik API_URL kullanımı
+      const { data } = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProfile(data);
@@ -79,7 +83,8 @@ const Profile = () => {
         payload.newPassword = formData.newPassword;
       }
 
-      const { data } = await axios.put('http://localhost:5000/api/users/me', payload, {
+      // 3. ADIM: Dinamik API_URL kullanımı
+      const { data } = await axios.put(`${API_URL}/users/me`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -96,6 +101,7 @@ const Profile = () => {
     }
   };
 
+  // Yüklenme durumu
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center">
@@ -104,10 +110,28 @@ const Profile = () => {
     );
   }
 
+  // 4. ADIM: BEMBEYAZ EKRAN ÇÖZÜMÜ
+  // Eğer profil null ise sayfayı boş (null) döndürmek yerine hata mesajı gösteriyoruz.
   if (!profile) {
-    return null;
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col items-center justify-center p-4">
+        <AlertCircle size={64} className="text-red-500 mb-4 opacity-80" />
+        <h2 className="text-2xl font-bold mb-2">Eyvah, Bir Sorun Oluştu!</h2>
+        <p className="text-gray-400 mb-6 text-center max-w-md">
+          {error || 'Profil bilgilerinizi çekerken bir sorun yaşadık. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.'}
+        </p>
+        <button 
+          onClick={() => navigate('/dashboard')}
+          className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all"
+        >
+          <ArrowLeft size={20} />
+          Panoya Dön
+        </button>
+      </div>
+    );
   }
 
+  // Başarılı yükleme durumunda gösterilecek profil arayüzü
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
