@@ -18,6 +18,9 @@ const LeaveRequest = () => {
 
   // --- YENİ: SEKME YÖNETİMİ ---
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' veya 'history'
+  
+  // --- YENİ: MOBİL FORM GÖRÜNÜMÜ ---
+  const [showMobileForm, setShowMobileForm] = useState(false);
 
   const [editId, setEditId] = useState(null);
   const [editReason, setEditReason] = useState('');
@@ -57,6 +60,7 @@ const LeaveRequest = () => {
       setMessage(data.message);
       setRequestedDate('');
       setReason('');
+      setShowMobileForm(false); // Formu kapatalım
       fetchMyLeaves(); 
     } catch (err) {
       setError(err.response?.data?.message || 'Bir hata oluştu.');
@@ -104,7 +108,7 @@ const LeaveRequest = () => {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white p-4 md:p-8 relative">
+    <div className="min-h-screen bg-[#0f0f0f] text-white p-2 md:p-8 relative pb-24 md:pb-8">
       <div className="max-w-6xl mx-auto">
         
         <div className="flex items-center gap-4 mb-10">
@@ -120,8 +124,8 @@ const LeaveRequest = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* SOL: FORM */}
-          <div className="lg:col-span-4">
+          {/* SOL: FORM (Masaüstünde Gözükür) */}
+          <div className="hidden lg:block lg:col-span-4">
             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-md sticky top-24 shadow-xl">
               <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
                 <Send size={18} className="text-red-600" /> Talep Oluştur
@@ -245,6 +249,61 @@ const LeaveRequest = () => {
 
         </div>
       </div>
+
+      {/* MOBİL FAB (Talep Oluştur) */}
+      <button 
+        onClick={() => setShowMobileForm(true)}
+        className="lg:hidden fixed bottom-20 right-4 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform active:scale-95"
+      >
+        <Send size={24} />
+      </button>
+
+      {/* MOBİL MODAL: TALEP FORMU */}
+      {showMobileForm && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 lg:hidden">
+          <div className="bg-[#141414] border-t sm:border border-white/10 p-6 rounded-t-3xl sm:rounded-3xl w-full max-w-md relative animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+            <button 
+              onClick={() => setShowMobileForm(false)} 
+              className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 italic uppercase">
+              <Send size={20} className="text-red-600" /> Talep Oluştur
+            </h2>
+
+            {error && <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-[11px] p-3 rounded-lg mb-4 flex items-center gap-2"><AlertCircle size={14}/> {error}</div>}
+            {message && <div className="bg-green-500/10 border border-green-500/50 text-green-500 text-[11px] p-3 rounded-lg mb-4 flex items-center gap-2"><CheckCircle size={14}/> {message}</div>}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="date"
+                min={today}
+                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                value={requestedDate}
+                onChange={(e) => setRequestedDate(e.target.value)}
+                required
+              />
+              <textarea
+                placeholder="Mazeretiniz..."
+                rows="4"
+                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all resize-none"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                required
+              ></textarea>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Gönder'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

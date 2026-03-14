@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+body {
+  background-color: #0f0f0f;
+  color: white;
+}
+
 /* --- QR KOD OKUYUCU (GÜVENLİ TASARIM) --- */
 #reader {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;

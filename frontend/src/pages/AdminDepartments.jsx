@@ -173,7 +173,7 @@ const AdminDepartments = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] p-4 md:p-8 text-white">
+    <div className="min-h-screen bg-[#0f0f0f] p-2 md:p-8 text-white">
       <div className="max-w-5xl mx-auto">
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
@@ -185,15 +185,15 @@ const AdminDepartments = () => {
               <h1 className="text-2xl font-black tracking-tighter italic">
                 DEPARTMAN & <span className="text-red-600">MESAİ AYARLARI</span>
               </h1>
-              <p className="text-sm text-gray-400">Takım yapısını ve mesai gün/saatlerini buradan yönetin.</p>
-            </div>
+            <p className="text-sm text-gray-400">Takım yapısını ve mesai gün/saatlerini yönetin.</p>
           </div>
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl font-bold text-sm transition-all"
-          >
-            <Plus size={18} /> Yeni Departman
-          </button>
+        </div>
+        <button
+          onClick={openAdd}
+          className="hidden md:flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl font-bold text-sm transition-all"
+        >
+          <Plus size={18} /> Yeni Departman
+        </button>
         </div>
 
         {/* Sekmeler */}
@@ -262,8 +262,9 @@ const AdminDepartments = () => {
             </button>
           </div>
         ) : (
-          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden pb-4 md:pb-0">
+            {/* MASAÜSTÜ TABLO */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-white/10 bg-white/5">
@@ -312,6 +313,37 @@ const AdminDepartments = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* MOBİL KARTLAR */}
+            <div className="md:hidden flex flex-col gap-4 p-4">
+               {departments.map((dept) => (
+                 <div key={dept._id} className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col gap-3">
+                    <div className="flex justify-between items-start">
+                       <div>
+                          <div className="font-bold text-lg text-white">{dept.name}</div>
+                          {dept.parentId && <div className="text-xs text-blue-400 mt-1">Üst Birim: {getParentName(dept.parentId)}</div>}
+                       </div>
+                       <span className="inline-flex items-center gap-1 bg-white/10 px-2 py-1 rounded-lg text-xs font-bold shrink-0 text-gray-300">
+                          <Users size={12} /> {dept.memberCount || 0}
+                       </span>
+                    </div>
+                    
+                    <div className="bg-white/5 p-3 rounded-lg border border-white/5 text-xs text-gray-300 flex items-start gap-2">
+                       <Clock size={14} className="text-gray-500 mt-0.5 shrink-0" />
+                       <span>{formatSchedule(dept.workSchedule)}</span>
+                    </div>
+
+                    <div className="flex gap-2 mt-2 border-t border-white/10 pt-3">
+                       <button onClick={() => openEdit(dept)} className="flex-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1">
+                          <Pencil size={14} /> Düzenle
+                       </button>
+                       <button onClick={() => handleDelete(dept._id, dept.name)} className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1">
+                          <Trash2 size={14} /> Sil
+                       </button>
+                    </div>
+                 </div>
+               ))}
             </div>
           </div>
         )}
@@ -430,6 +462,15 @@ const AdminDepartments = () => {
           </div>
         )}
       </div>
+
+      {/* MOBIL FAB (Yeni Departman) */}
+      <button 
+        onClick={openAdd}
+        className="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform active:scale-95"
+      >
+        <Plus size={24} />
+      </button>
+
     </div>
   );
 };

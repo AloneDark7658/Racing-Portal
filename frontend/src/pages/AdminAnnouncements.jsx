@@ -86,7 +86,7 @@ const AdminAnnouncements = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] p-4 md:p-8 text-white">
+    <div className="min-h-screen bg-[#0f0f0f] p-2 md:p-8 text-white">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-8 bg-white/5 p-4 rounded-2xl border border-white/10">
           <div className="flex items-center gap-4">
@@ -98,7 +98,7 @@ const AdminAnnouncements = () => {
               <p className="text-sm text-gray-400">Takıma veya spesifik departmanlara duyuru gönderin.</p>
             </div>
           </div>
-          <button onClick={() => setModalOpen(true)} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl font-bold text-sm">
+          <button onClick={() => setModalOpen(true)} className="hidden md:flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl font-bold text-sm">
             <Plus size={18} /> Yeni Duyuru
           </button>
         </div>
@@ -181,6 +181,15 @@ const AdminAnnouncements = () => {
           </div>
         )}
       </div>
+
+      {/* MOBIL FAB (Yeni Duyuru) */}
+      <button 
+        onClick={() => setModalOpen(true)}
+        className="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform active:scale-95"
+      >
+        <Plus size={24} />
+      </button>
+
     </div>
   );
 };

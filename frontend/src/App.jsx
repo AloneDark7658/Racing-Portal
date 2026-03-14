@@ -18,6 +18,8 @@ import AdminManageDevices from './pages/AdminManageDevices';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import Announcements from './pages/Announcements';
 import BottomNav from './components/BottomNav';
+import AttendanceHub from './pages/AttendanceHub';
+import LeaveHub from './pages/LeaveHub';
 
 const AppContent = () => {
   const location = useLocation();
@@ -25,7 +27,7 @@ const AppContent = () => {
   const isAuthPage = hideNavPages.includes(location.pathname) || location.pathname.startsWith('/reset-password');
 
   return (
-    <div className={!isAuthPage ? "pb-20 md:pb-0 font-sans" : "font-sans"}>
+    <div className={!isAuthPage ? "pb-20 md:pb-0 font-sans min-h-screen bg-[#0f0f0f] text-white" : "font-sans min-h-screen bg-[#0f0f0f] text-white"}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -43,6 +45,8 @@ const AppContent = () => {
         <Route path="/admin/departments" element={<AdminDepartments />} />
         
         {/* --- YENİ EKLENEN DUYURU ROTALARI --- */}
+        <Route path="/attendance-hub" element={<AttendanceHub />} />
+        <Route path="/leave-hub" element={<LeaveHub />} />
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />
         <Route path="/announcements" element={<Announcements />} />
 

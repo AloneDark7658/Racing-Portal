@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config';
 import { Link, useNavigate } from 'react-router-dom';
@@ -119,28 +119,30 @@ const AdminLeaves = () => {
     }
   };
 
-  // VERİLERİ SEKME VE FİLTRELERE GÖRE LİSTELİYORUZ
-  const displayedLeaves = leaves.filter(leave => {
-    // Sekme Filtresi
-    if (activeTab === 'pending' && leave.status && leave.status !== 'Bekliyor') return false;
-    if (activeTab === 'processed' && leave.status !== 'Onaylandı' && leave.status !== 'Reddedildi') return false;
+  // VERİLERİ SEKME VE FİLTRELERE GÖRE LİSTELİYORUZ (Performans için useMemo eklendi)
+  const displayedLeaves = useMemo(() => {
+    return leaves.filter(leave => {
+      // Sekme Filtresi
+      if (activeTab === 'pending' && leave.status && leave.status !== 'Bekliyor') return false;
+      if (activeTab === 'processed' && leave.status !== 'Onaylandı' && leave.status !== 'Reddedildi') return false;
 
-    // Arama Filtresi (İsim veya No)
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const nameMatch = leave.user?.name?.toLowerCase().includes(term);
-      const studentIdMatch = leave.user?.studentId?.toLowerCase().includes(term);
-      if (!nameMatch && !studentIdMatch) return false;
-    }
+      // Arama Filtresi (İsim veya No)
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const nameMatch = leave.user?.name?.toLowerCase().includes(term);
+        const studentIdMatch = leave.user?.studentId?.toLowerCase().includes(term);
+        if (!nameMatch && !studentIdMatch) return false;
+      }
 
-    // Departman Filtresi
-    if (selectedDep) {
-      const depId = leave.user?.departmentId?._id || leave.user?.departmentId;
-      if (depId !== selectedDep) return false;
-    }
+      // Departman Filtresi
+      if (selectedDep) {
+        const depId = leave.user?.departmentId?._id || leave.user?.departmentId;
+        if (depId !== selectedDep) return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [leaves, activeTab, searchTerm, selectedDep]);
 
   const exportToExcel = () => {
     if (displayedLeaves.length === 0) return;

@@ -146,7 +146,7 @@ const AdminAttendanceLog = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8">
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-2 md:p-8">
       <div className="max-w-7xl mx-auto">
         <Link to="/dashboard" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-8 transition-colors text-sm font-medium">
           <ArrowLeft size={18} /> Dashboard'a Dön
@@ -210,58 +210,118 @@ const AdminAttendanceLog = () => {
                 </div>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-black/60 text-[10px] uppercase tracking-widest text-gray-400 border-b border-white/10">
-                    <th className="p-6 font-black">Üye Adı</th>
-                    <th className="p-6 font-black text-center text-blue-400">Rol</th>
-                    <th className="p-6 font-black text-center text-green-500">Zamanında 🟢</th>
-                    <th className="p-6 font-black text-center text-yellow-400">Gecikmeli 🟡</th>
-                    <th className="p-6 font-black text-center text-red-500">Çok Geç 🔴</th>
-                    <th className="p-6 font-black text-center text-blue-500">İzinli 🔵</th>
-                    <th className="p-6 font-black text-center text-gray-500">Devamsız ⚫</th>
-                    <th className="p-6 font-black text-center">Toplam</th>
-                    <th className="p-6 font-black text-right">Aksiyon</th>
-                    
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {displayedSummary.map((user) => (
-                    <tr key={user._id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-6">
-                        <div className="font-bold text-base">{user.name}</div>
-                        <div className="text-xs text-gray-500 flex items-center justify-between gap-2 mt-1">
-                          <span className="flex-1">{user.studentId}</span>
-                          <span className="text-blue-400 truncate">{user.department}</span>
-                        </div>
-                      </td>
-                      <td className="p-6 text-center">
-                        {user.role === 'superadmin' ? (
-                          <span className="bg-purple-500/10 text-purple-500 border border-purple-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest">Kurucu</span>
-                        ) : user.role === 'admin' ? (
-                          <span className="bg-red-500/10 text-red-500 border border-red-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest">Admin</span>
-                        ) : (
-                          <span className="bg-blue-500/10 text-blue-500 border border-blue-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest">Üye</span>
-                        )}
-                      </td>
-                      <td className="p-6 text-center font-black text-green-500">{user.green}</td>
-                      <td className="p-6 text-center font-black text-yellow-400">{user.yellow}</td>
-                      <td className="p-6 text-center font-black text-red-500">{user.red}</td>
-                      <td className="p-6 text-center font-black text-blue-500">{user.leave || 0}</td>
-                      <td className="p-6 text-center font-black text-gray-500">{user.absent}</td>
-                      <td className="p-6 text-center font-bold">{user.totalSessions}</td>
-                      <td className="p-6 text-right">
-                        <button 
-                          onClick={() => handleViewGraph(user._id, user.name)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tighter transition-all active:scale-95 flex items-center gap-2 inline-flex"
-                        >
-                          <TrendingUp size={14} /> Analiz
-                        </button>
-                      </td>
+              <>
+                {/* MASAÜSTÜ TABLO GÖRÜNÜMÜ */}
+                <table className="w-full text-left border-collapse hidden md:table">
+                  <thead>
+                    <tr className="bg-black/60 text-[10px] uppercase tracking-widest text-gray-400 border-b border-white/10">
+                      <th className="p-6 font-black">Üye Adı</th>
+                      <th className="p-6 font-black text-center text-blue-400">Rol</th>
+                      <th className="p-6 font-black text-center text-green-500">Zamanında 🟢</th>
+                      <th className="p-6 font-black text-center text-yellow-400">Gecikmeli 🟡</th>
+                      <th className="p-6 font-black text-center text-red-500">Çok Geç 🔴</th>
+                      <th className="p-6 font-black text-center text-blue-500">İzinli 🔵</th>
+                      <th className="p-6 font-black text-center text-gray-500">Devamsız ⚫</th>
+                      <th className="p-6 font-black text-center">Toplam</th>
+                      <th className="p-6 font-black text-right">Aksiyon</th>
+                      
                     </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {displayedSummary.map((user) => (
+                      <tr key={user._id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="p-6">
+                          <div className="font-bold text-base">{user.name}</div>
+                          <div className="text-xs text-gray-500 flex items-center justify-between gap-2 mt-1">
+                            <span className="flex-1">{user.studentId}</span>
+                            <span className="text-blue-400 truncate">{user.department}</span>
+                          </div>
+                        </td>
+                        <td className="p-6 text-center">
+                          {user.role === 'superadmin' ? (
+                            <span className="bg-purple-500/10 text-purple-500 border border-purple-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest">Kurucu</span>
+                          ) : user.role === 'admin' ? (
+                            <span className="bg-red-500/10 text-red-500 border border-red-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest">Admin</span>
+                          ) : (
+                            <span className="bg-blue-500/10 text-blue-500 border border-blue-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest">Üye</span>
+                          )}
+                        </td>
+                        <td className="p-6 text-center font-black text-green-500">{user.green}</td>
+                        <td className="p-6 text-center font-black text-yellow-400">{user.yellow}</td>
+                        <td className="p-6 text-center font-black text-red-500">{user.red}</td>
+                        <td className="p-6 text-center font-black text-blue-500">{user.leave || 0}</td>
+                        <td className="p-6 text-center font-black text-gray-500">{user.absent}</td>
+                        <td className="p-6 text-center font-bold">{user.totalSessions}</td>
+                        <td className="p-6 text-right">
+                          <button 
+                            onClick={() => handleViewGraph(user._id, user.name)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tighter transition-all active:scale-95 flex items-center gap-2 inline-flex"
+                          >
+                            <TrendingUp size={14} /> Analiz
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {/* MOBİL KART GÖRÜNÜMÜ */}
+                <div className="flex flex-col gap-4 p-4 md:hidden">
+                  {displayedSummary.map((user) => (
+                    <div key={user._id} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-4 relative">
+                      {/* Üst Kısım: Kimlik */}
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-black text-lg text-white mb-1">{user.name}</div>
+                          <div className="text-xs text-gray-400 font-semibold">{user.studentId}</div>
+                          <div className="text-xs text-blue-400 font-bold mt-1">{user.department}</div>
+                        </div>
+                        <div>
+                          {user.role === 'superadmin' ? (
+                            <span className="bg-purple-500/10 text-purple-500 border border-purple-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest inline-block">Kurucu</span>
+                          ) : user.role === 'admin' ? (
+                            <span className="bg-red-500/10 text-red-500 border border-red-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest inline-block">Admin</span>
+                          ) : (
+                            <span className="bg-blue-500/10 text-blue-500 border border-blue-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest inline-block">Üye</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Puan Durumu Grid */}
+                      <div className="grid grid-cols-5 gap-2 bg-black/40 rounded-xl p-3 border border-white/5">
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] uppercase font-bold text-gray-500 mb-1">🟢</span>
+                          <span className="font-black text-green-500 leading-none">{user.green}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] uppercase font-bold text-gray-500 mb-1">🟡</span>
+                          <span className="font-black text-yellow-400 leading-none">{user.yellow}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] uppercase font-bold text-gray-500 mb-1">🔴</span>
+                          <span className="font-black text-red-500 leading-none">{user.red}</span>
+                        </div>
+                        <div className="flex flex-col items-center border-x border-white/10 px-1">
+                          <span className="text-[10px] uppercase font-bold text-gray-500 mb-1">🔵</span>
+                          <span className="font-black text-blue-500 leading-none">{user.leave || 0}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] uppercase font-bold text-gray-500 mb-1">⚫</span>
+                          <span className="font-black text-gray-500 leading-none">{user.absent}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Analiz Butonu */}
+                      <button 
+                        onClick={() => handleViewGraph(user._id, user.name)}
+                        className="w-full bg-red-600/10 hover:bg-red-600 border border-red-600/30 text-red-500 hover:text-white py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all active:scale-95 flex justify-center items-center gap-2 mt-2"
+                      >
+                        <TrendingUp size={16} /> Performans Analizi
+                      </button>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </>
             )}
           </div>
         </div>
