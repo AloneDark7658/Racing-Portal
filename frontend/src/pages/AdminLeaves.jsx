@@ -286,7 +286,11 @@ const AdminLeaves = () => {
 
         {/* İzin Kartları Listesi */}
         {loading ? (
-          <div className="text-center text-gray-500 py-10 animate-pulse">Talepler yükleniyor... 🏎️</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl h-48 animate-pulse"></div>
+            ))}
+          </div>
         ) : displayedLeaves.length === 0 ? (
           <div className="text-center bg-white/5 p-10 rounded-2xl border border-white/10 text-gray-400 flex flex-col items-center gap-3">
             <Check size={48} className="text-green-500/50" />

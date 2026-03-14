@@ -12,6 +12,7 @@ const Dashboard = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [selectedAnn, setSelectedAnn] = useState(null); // Tıklanan duyuruyu tutar
   const [stats, setStats] = useState({ todayAttendanceCount: 0, pendingLeaveCount: 0 }); // Admin Özet istatistikleri
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const fetchAdminStats = async (token) => {
@@ -37,14 +38,23 @@ const Dashboard = () => {
     } else {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      // Kullanıcıya özel duyuruları çekiyoruz
-      axios.get(`${API}/announcements`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(res => setAnnouncements(res.data))
-        .catch(err => console.error("Duyurular alınamadı", err));
-        
-      if (parsedUser.role === 'admin' || parsedUser.role === 'superadmin') {
-        fetchAdminStats(token);
-      }
+      
+      const fetchDashboardData = async () => {
+        try {
+          const annRes = await axios.get(`${API}/announcements`, { headers: { Authorization: `Bearer ${token}` } });
+          setAnnouncements(annRes.data);
+          
+          if (parsedUser.role === 'admin' || parsedUser.role === 'superadmin') {
+            await fetchAdminStats(token);
+          }
+        } catch (err) {
+          console.error("Dashboard verileri alınamadı", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchDashboardData();
     }
   }, [navigate]);
 
@@ -70,7 +80,7 @@ const Dashboard = () => {
               </span>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <div className="hidden md:flex flex-col items-end">
                 <span className="text-sm font-semibold">{user.name}</span>
                 <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -83,7 +93,7 @@ const Dashboard = () => {
               </div>
               <Link
                 to="/profile"
-                className="p-2 bg-white/5 hover:bg-red-600/20 hover:text-red-500 rounded-lg transition-all border border-white/10"
+                className="hidden md:flex p-2 bg-white/5 hover:bg-red-600/20 hover:text-red-500 rounded-lg transition-all border border-white/10"
                 title="Profil Ayarları"
               >
                 <Settings size={20} />
@@ -113,31 +123,40 @@ const Dashboard = () => {
 
         {/* YÖNETİCİ ÖZET KARTLARI */}
         {(user.role === 'admin' || user.role === 'superadmin') && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <Link to="/admin/attendance-log" className="bg-gradient-to-br from-green-500/20 to-green-600/5 border border-green-500/20 hover:border-green-500/50 p-6 rounded-2xl flex items-center justify-between transition-all group cursor-pointer">
-              <div>
-                <p className="text-sm text-green-500 font-bold mb-1 group-hover:text-green-400 transition-colors">Bugünkü Yoklama</p>
-                <h3 className="text-3xl font-black text-white">{stats.todayAttendanceCount} <span className="text-sm font-normal text-gray-400">kişi</span></h3>
-              </div>
-              <div className="bg-green-500/20 p-4 rounded-full text-green-500 group-hover:scale-110 transition-transform">
-                <TrendingUp size={32} />
-              </div>
-            </Link>
+          loading ? (
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+               <div className="h-[104px] bg-white/5 rounded-2xl border border-white/10 animate-pulse"></div>
+               <div className="h-[104px] bg-white/5 rounded-2xl border border-white/10 animate-pulse"></div>
+             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <Link to="/admin/attendance-log" className="bg-gradient-to-br from-green-500/20 to-green-600/5 border border-green-500/20 hover:border-green-500/50 p-6 rounded-2xl flex items-center justify-between transition-all group cursor-pointer">
+                <div>
+                  <p className="text-sm text-green-500 font-bold mb-1 group-hover:text-green-400 transition-colors">Bugünkü Yoklama</p>
+                  <h3 className="text-3xl font-black text-white">{stats.todayAttendanceCount} <span className="text-sm font-normal text-gray-400">kişi</span></h3>
+                </div>
+                <div className="bg-green-500/20 p-4 rounded-full text-green-500 group-hover:scale-110 transition-transform">
+                  <TrendingUp size={32} />
+                </div>
+              </Link>
 
-            <Link to="/admin/leaves" className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/5 border border-yellow-500/20 hover:border-yellow-500/50 p-6 rounded-2xl flex items-center justify-between transition-all group cursor-pointer">
-              <div>
-                <p className="text-sm text-yellow-500 font-bold mb-1 group-hover:text-yellow-400 transition-colors">Bekleyen İzinler</p>
-                <h3 className="text-3xl font-black text-white">{stats.pendingLeaveCount} <span className="text-sm font-normal text-gray-400">talep</span></h3>
-              </div>
-              <div className="bg-yellow-500/20 p-4 rounded-full text-yellow-500 group-hover:scale-110 transition-transform">
-                <ClipboardList size={32} />
-              </div>
-            </Link>
-          </div>
+              <Link to="/admin/leaves" className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/5 border border-yellow-500/20 hover:border-yellow-500/50 p-6 rounded-2xl flex items-center justify-between transition-all group cursor-pointer">
+                <div>
+                  <p className="text-sm text-yellow-500 font-bold mb-1 group-hover:text-yellow-400 transition-colors">Bekleyen İzinler</p>
+                  <h3 className="text-3xl font-black text-white">{stats.pendingLeaveCount} <span className="text-sm font-normal text-gray-400">talep</span></h3>
+                </div>
+                <div className="bg-yellow-500/20 p-4 rounded-full text-yellow-500 group-hover:scale-110 transition-transform">
+                  <ClipboardList size={32} />
+                </div>
+              </Link>
+            </div>
+          )
         )}
 
         {/* --- DUYURULAR BÖLÜMÜ (Sadeleştirilmiş ve Tıklanabilir) --- */}
-        {announcements.length > 0 && (
+        {loading ? (
+             <div className="mb-8 border border-white/5 bg-white/5 rounded-2xl p-6 h-48 animate-pulse"></div>
+        ) : announcements.length > 0 && (
           <div className="mb-8 border border-blue-500/20 bg-blue-500/5 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-blue-400 flex items-center gap-2">
@@ -159,7 +178,6 @@ const Dashboard = () => {
                   <h4 className="font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-1">{ann.title}</h4>
                   <div className="text-[10px] text-gray-500 mt-2 font-semibold uppercase flex justify-between">
                     <span>{ann.author?.name}</span>
-                    {/* SAAT EKLENDİ */}
                     <span>{new Date(ann.createdAt).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' })}</span>
                   </div>
                 </div>

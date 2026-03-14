@@ -39,7 +39,6 @@ const MyPerformance = () => {
     return '';
   };
 
-  // GRAFİK NOKTA ZEKA: İzinliyi mavi, diğerlerini puan renginde boyar
   const CustomDot = (props) => {
     const { cx, cy, payload } = props;
     
@@ -76,8 +75,19 @@ const MyPerformance = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-red-600 animate-spin" />
+      <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8 font-sans">
+        <div className="max-w-6xl mx-auto">
+          <div className="w-32 h-4 bg-white/10 rounded animate-pulse mb-8"></div>
+          <div className="w-72 h-10 bg-white/10 rounded animate-pulse mb-10"></div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+            {[...Array(5)].map((_, i) => (
+               <div key={i} className="bg-[#111] border border-white/5 h-32 rounded-3xl animate-pulse"></div>
+            ))}
+          </div>
+          
+          <div className="bg-[#111] border border-white/5 h-[400px] rounded-[2rem] animate-pulse"></div>
+        </div>
       </div>
     );
   }
@@ -94,45 +104,37 @@ const MyPerformance = () => {
           SÜRÜCÜ <span className="text-red-600 text-stroke-white">TELEMETRİSİ</span>
         </h1>
 
-                {/* --- İSTATİSTİK KARTLARI --- */}
-        {/* Grid yapısını 5'li sisteme uygun hale getirdik */}
+        {/* --- İSTATİSTİK KARTLARI --- */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
-        
-        {/* 1. ZAMANINDA */}
-        <div className="bg-[#111] border border-white/5 p-6 rounded-3xl flex flex-col items-center shadow-lg">
-            <CheckCircle className="text-green-500 mb-3" size={32} />
-            <span className="text-3xl font-black">{summary?.green || 0}</span>
-            <span className="text-[10px] text-gray-500 font-black uppercase mt-1 tracking-widest">Zamanında</span>
-        </div>
+          <div className="bg-[#111] border border-white/5 p-6 rounded-3xl flex flex-col items-center shadow-lg">
+              <CheckCircle className="text-green-500 mb-3" size={32} />
+              <span className="text-3xl font-black">{summary?.green || 0}</span>
+              <span className="text-[10px] text-gray-500 font-black uppercase mt-1 tracking-widest">Zamanında</span>
+          </div>
 
-        {/* 2. GECİKMELİ */}
-        <div className="bg-[#111] border border-white/5 p-6 rounded-3xl flex flex-col items-center shadow-lg">
-            <Activity className="text-yellow-400 mb-3" size={32} />
-            <span className="text-3xl font-black">{summary?.yellow || 0}</span>
-            <span className="text-[10px] text-gray-500 font-black uppercase mt-1 tracking-widest">Gecikmeli</span>
-        </div>
+          <div className="bg-[#111] border border-white/5 p-6 rounded-3xl flex flex-col items-center shadow-lg">
+              <Activity className="text-yellow-400 mb-3" size={32} />
+              <span className="text-3xl font-black">{summary?.yellow || 0}</span>
+              <span className="text-[10px] text-gray-500 font-black uppercase mt-1 tracking-widest">Gecikmeli</span>
+          </div>
 
-        {/* 3. ÇOK GEÇ */}
-        <div className="bg-[#111] border border-white/5 p-6 rounded-3xl flex flex-col items-center shadow-lg">
-            <AlertTriangle className="text-red-600 mb-3" size={32} />
-            <span className="text-3xl font-black">{summary?.red || 0}</span>
-            <span className="text-[10px] text-gray-500 font-black uppercase mt-1 tracking-widest">Çok Geç</span>
-        </div>
+          <div className="bg-[#111] border border-white/5 p-6 rounded-3xl flex flex-col items-center shadow-lg">
+              <AlertTriangle className="text-red-600 mb-3" size={32} />
+              <span className="text-3xl font-black">{summary?.red || 0}</span>
+              <span className="text-[10px] text-gray-500 font-black uppercase mt-1 tracking-widest">Çok Geç</span>
+          </div>
 
-        {/* 4. İZİNLİ (YENİ EKLENEN MAVİ KUTU) 👇 */}
-        <div className="bg-[#111] border border-blue-500/20 p-6 rounded-3xl flex flex-col items-center shadow-lg">
-            <CalendarDays className="text-blue-500 mb-3" size={32} />
-            <span className="text-3xl font-black text-blue-500">{summary?.leave || 0}</span>
-            <span className="text-[10px] text-blue-400 font-black uppercase mt-1 tracking-widest">İzinli</span>
-        </div>
+          <div className="bg-[#111] border border-blue-500/20 p-6 rounded-3xl flex flex-col items-center shadow-lg">
+              <CalendarDays className="text-blue-500 mb-3" size={32} />
+              <span className="text-3xl font-black text-blue-500">{summary?.leave || 0}</span>
+              <span className="text-[10px] text-blue-400 font-black uppercase mt-1 tracking-widest">İzinli</span>
+          </div>
 
-        {/* 5. DEVAMSIZ */}
-        <div className="bg-[#111] border border-white/5 p-6 rounded-3xl flex flex-col items-center shadow-lg">
-            <XOctagon className="text-gray-500 mb-3" size={32} />
-            <span className="text-3xl font-black">{summary?.absent || 0}</span>
-            <span className="text-[10px] text-gray-500 font-black uppercase mt-1 tracking-widest">Devamsız</span>
-        </div>
-
+          <div className="bg-[#111] border border-white/5 p-6 rounded-3xl flex flex-col items-center shadow-lg">
+              <XOctagon className="text-gray-500 mb-3" size={32} />
+              <span className="text-3xl font-black">{summary?.absent || 0}</span>
+              <span className="text-[10px] text-gray-500 font-black uppercase mt-1 tracking-widest">Devamsız</span>
+          </div>
         </div>
 
         {/* --- GRAFİK ALANI --- */}

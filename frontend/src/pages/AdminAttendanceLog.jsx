@@ -196,9 +196,11 @@ const AdminAttendanceLog = () => {
         <div className="bg-[#141414] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-4">
-                <Loader2 className="w-10 h-10 text-red-600 animate-spin" />
-                <p className="text-gray-500 animate-pulse font-bold tracking-widest text-xs uppercase">Veriler Yükleniyor...</p>
+              <div className="flex flex-col space-y-4 p-6">
+                <div className="h-10 bg-white/5 border-b border-white/10 rounded mb-2"></div>
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-16 bg-white/5 rounded-xl animate-pulse"></div>
+                ))}
               </div>
             ) : summary.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4 text-gray-500">

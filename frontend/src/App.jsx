@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -17,10 +17,15 @@ import AdminManageDevices from './pages/AdminManageDevices';
 // --- YENİ EKLENEN DUYURU SAYFALARI ---
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import Announcements from './pages/Announcements';
+import BottomNav from './components/BottomNav';
 
-function App() {
+const AppContent = () => {
+  const location = useLocation();
+  const hideNavPages = ['/login', '/register', '/forgot-password'];
+  const isAuthPage = hideNavPages.includes(location.pathname) || location.pathname.startsWith('/reset-password');
+
   return (
-    <Router>
+    <div className={!isAuthPage ? "pb-20 md:pb-0 font-sans" : "font-sans"}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -45,6 +50,15 @@ function App() {
         
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+      {!isAuthPage && <BottomNav />}
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }
