@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, CreditCard, Lock, Loader2, ArrowLeft, Save, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 // 1. ADIM: API_URL'i config dosyasından içe aktarıyoruz
 import { API_URL } from '../config'; 
 
@@ -9,8 +10,7 @@ const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [fullScreenError, setFullScreenError] = useState(''); // Fetch profile errors
   const [formData, setFormData] = useState({
     email: '',
     currentPassword: '',
@@ -48,7 +48,7 @@ const Profile = () => {
         confirmPassword: ''
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Profil yüklenemedi.');
+      setFullScreenError(err.response?.data?.message || 'Profil yüklenemedi.');
       if (err.response?.status === 401) navigate('/login');
     } finally {
       setLoading(false);
@@ -63,17 +63,15 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaveLoading(true);
-    setMessage('');
-    setError('');
 
     if (formData.newPassword) {
       if (formData.newPassword !== formData.confirmPassword) {
-        setError('Yeni şifreler eşleşmiyor!');
+        toast.error('Yeni şifreler eşleşmiyor!');
         setSaveLoading(false);
         return;
       }
       if (formData.newPassword.length < 6) {
-        setError('Yeni şifre en az 6 karakter olmalıdır.');
+        toast.error('Yeni şifre en az 6 karakter olmalıdır.');
         setSaveLoading(false);
         return;
       }
@@ -91,14 +89,14 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setMessage(data.message);
+      toast.success(data.message || 'Profil başarıyla güncellendi!');
       if (data.user) {
         setProfile(data.user);
         localStorage.setItem('user', JSON.stringify({ id: data.user._id, name: data.user.name, role: data.user.role }));
       }
       setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
     } catch (err) {
-      setError(err.response?.data?.message || 'Güncelleme başarısız.');
+      toast.error(err.response?.data?.message || 'Güncelleme başarısız.');
     } finally {
       setSaveLoading(false);
     }
@@ -121,7 +119,7 @@ const Profile = () => {
         <AlertCircle size={64} className="text-red-500 mb-4 opacity-80" />
         <h2 className="text-2xl font-bold mb-2">Eyvah, Bir Sorun Oluştu!</h2>
         <p className="text-gray-400 mb-6 text-center max-w-md">
-          {error || 'Profil bilgilerinizi çekerken bir sorun yaşadık. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.'}
+          {fullScreenError || 'Profil bilgilerinizi çekerken bir sorun yaşadık. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.'}
         </p>
         <button 
           onClick={() => navigate('/dashboard')}
@@ -151,17 +149,6 @@ const Profile = () => {
         </div>
 
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-4 rounded-xl mb-6 flex items-center gap-2">
-              <AlertCircle size={18} /> {error}
-            </div>
-          )}
-          {message && (
-            <div className="bg-green-500/10 border border-green-500/50 text-green-500 text-sm p-4 rounded-xl mb-6 flex items-center gap-2">
-              <CheckCircle size={18} /> {message}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ad Soyad</label>

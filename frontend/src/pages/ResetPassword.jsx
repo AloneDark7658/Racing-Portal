@@ -3,13 +3,13 @@ import axios from 'axios';
 import { API_URL } from '../config';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Lock, Loader2, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -20,18 +20,17 @@ const ResetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setMessage('');
 
     if (password !== confirmPassword) {
-      setError('Şifreler birbiriyle eşleşmiyor!');
+      toast.error('Şifreler birbiriyle eşleşmiyor!');
       setLoading(false);
       return;
     }
 
     try {
       const { data } = await axios.put(`${API_URL}/auth/resetpassword/${token}`, { password });
-      setMessage(data.message);
+      toast.success(data.message);
+      setIsSuccess(true);
       
       // Başarılı olursa 3 saniye sonra Login'e yönlendir
       setTimeout(() => {
@@ -39,7 +38,7 @@ const ResetPassword = () => {
       }, 3000);
       
     } catch (err) {
-      setError(err.response?.data?.message || 'Şifre sıfırlanamadı. Linkin süresi dolmuş olabilir.');
+      toast.error(err.response?.data?.message || 'Şifre sıfırlanamadı. Linkin süresi dolmuş olabilir.');
     } finally {
       setLoading(false);
     }
@@ -57,17 +56,11 @@ const ResetPassword = () => {
           <p className="text-gray-400 text-sm mt-2">Yeni Şifre Belirle</p>
         </div>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-lg mb-6 text-center">
-            {error}
-          </div>
-        )}
-
-        {message ? (
+        {isSuccess ? (
           <div className="text-center space-y-4">
             <div className="bg-green-500/10 border border-green-500/50 text-green-500 p-4 rounded-lg flex flex-col items-center gap-2">
               <CheckCircle size={32} />
-              <p>{message}</p>
+              <p>Şifreniz başarıyla güncellendi!</p>
             </div>
             <p className="text-gray-400 text-sm animate-pulse">Giriş ekranına yönlendiriliyorsunuz...</p>
           </div>

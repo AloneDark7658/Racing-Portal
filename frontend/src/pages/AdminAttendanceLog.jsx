@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, X, Loader2, CalendarDays, AlertCircle } from 'lucide-react';
+import { ArrowLeft, TrendingUp, X, Loader2, CalendarDays, AlertCircle, Download, Search, Building } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AdminAttendanceLog = () => {
@@ -11,6 +12,11 @@ const AdminAttendanceLog = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [graphData, setGraphData] = useState([]);
   const [graphLoading, setGraphLoading] = useState(false);
+  
+  // FİLTRELEME İÇİN STATE'LER
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDep, setSelectedDep] = useState('');
+  const [departments, setDepartments] = useState([]);
 
   const token = localStorage.getItem('token');
 
@@ -27,7 +33,18 @@ const AdminAttendanceLog = () => {
         setLoading(false);
       }
     };
+    
+    const fetchDepartments = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/departments`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setDepartments(data);
+      } catch (err) { console.error('Departmanlar yüklenemedi'); }
+    };
+
     fetchSummary();
+    fetchDepartments();
   }, [token]);
 
   const handleViewGraph = async (userId, userName) => {
@@ -89,6 +106,45 @@ const AdminAttendanceLog = () => {
     return null;
   };
 
+  const exportToExcel = () => {
+    if (summary.length === 0) return;
+
+    // Excel kolonlarını hazırlama
+    const excelData = summary.map(user => ({
+      'Ad Soyad': user.name,
+      'Rol': user.role === 'superadmin' ? 'Kurucu' : user.role === 'admin' ? 'Admin' : 'Üye',
+      'Zamanında': user.green,
+      'Gecikmeli': user.yellow,
+      'Çok Geç': user.red,
+      'İzinli': user.leave || 0,
+      'Devamsız': user.absent,
+      'Toplam': user.totalSessions
+    }));
+
+    // Çalışma sayfası (worksheet) ve çalışma kitabı (workbook) oluşturma
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Yoklama Raporu');
+
+    // Excel dosyasını indirme
+    XLSX.writeFile(workbook, 'Yoklama_Raporu.xlsx');
+  };
+
+  const displayedSummary = summary.filter(user => {
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const nameMatch = user.name?.toLowerCase().includes(term);
+      const studentIdMatch = user.studentId?.toLowerCase().includes(term);
+      if (!nameMatch && !studentIdMatch) return false;
+    }
+    
+    if (selectedDep) {
+      if (user.departmentId !== selectedDep) return false;
+    }
+    
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -96,10 +152,46 @@ const AdminAttendanceLog = () => {
           <ArrowLeft size={18} /> Dashboard'a Dön
         </Link>
 
-        <h1 className="text-3xl font-black italic mb-8 uppercase tracking-tighter flex items-center gap-3">
-          <CalendarDays className="text-red-600" size={32} />
-          TAKIM YOKLAMA <span className="text-red-600">RAPORU</span>
-        </h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <h1 className="text-3xl font-black italic uppercase tracking-tighter flex items-center gap-3">
+            <CalendarDays className="text-red-600" size={32} />
+            TAKIM YOKLAMA <span className="text-red-600">RAPORU</span>
+          </h1>
+          <button 
+            onClick={exportToExcel}
+            className="bg-green-600/20 hover:bg-green-600 text-green-500 hover:text-white border border-green-500/50 hover:border-green-500 font-bold py-2 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 w-full md:w-auto"
+          >
+            <Download size={20} />
+            Excel'e Aktar
+          </button>
+        </div>
+
+        {/* FİLTRELEME ALANI */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="İsim veya Öğrenci No ile ara..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all placeholder-gray-500"
+            />
+          </div>
+          <div className="relative md:w-64">
+            <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <select 
+              value={selectedDep}
+              onChange={(e) => setSelectedDep(e.target.value)}
+              className="w-full bg-black border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white appearance-none focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+            >
+              <option value="">Tüm Departmanlar</option>
+              {departments.map(dep => (
+                <option key={dep._id} value={dep._id}>{dep.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         <div className="bg-[#141414] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
@@ -132,9 +224,15 @@ const AdminAttendanceLog = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {summary.map((user) => (
+                  {displayedSummary.map((user) => (
                     <tr key={user._id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-6 font-bold">{user.name}</td>
+                      <td className="p-6">
+                        <div className="font-bold text-base">{user.name}</div>
+                        <div className="text-xs text-gray-500 flex items-center justify-between gap-2 mt-1">
+                          <span className="flex-1">{user.studentId}</span>
+                          <span className="text-blue-400 truncate">{user.department}</span>
+                        </div>
+                      </td>
                       <td className="p-6 text-center">
                         {user.role === 'superadmin' ? (
                           <span className="bg-purple-500/10 text-purple-500 border border-purple-500/30 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest">Kurucu</span>

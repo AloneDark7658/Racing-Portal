@@ -175,7 +175,7 @@ exports.getTodayAttendance = async (req, res) => {
 exports.getAttendanceSummary = async (req, res) => {
   try {
     const sessions = await AttendanceSession.find().sort({ date: 1 });
-    const users = await User.find().select('name role'); 
+    const users = await User.find().select('name role studentId departmentId').populate('departmentId', 'name');
     
     const summary = await Promise.all(users.map(async (user) => {
       const userAtts = await Attendance.find({ userId: user._id });
@@ -204,6 +204,9 @@ exports.getAttendanceSummary = async (req, res) => {
         _id: user._id,
         name: user.name,
         role: user.role,
+        studentId: user.studentId,
+        department: user.departmentId ? user.departmentId.name : '',
+        departmentId: user.departmentId ? user.departmentId._id : '',
         green, yellow, red, leave,
         absent: absent < 0 ? 0 : absent,
         totalSessions: sessions.length

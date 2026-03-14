@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const helmet = require('helmet');
 
 // 1. .env dosyasındaki ortam değişkenlerini EN BAŞTA okumak en güvenlisidir
 dotenv.config();
@@ -25,6 +26,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json()); 
+app.use(helmet());
 
 // --- ROTALAR (API Uç Noktaları) ---
 // (Fazladan yazılmış olan kopya '/api/auth' rotası silindi)
@@ -39,6 +41,16 @@ app.use('/api/announcements', require('./routes/announcementRoutes'));
 // --- Test Rotası ---
 app.get('/', (req, res) => {
   res.send('İTÜ Racing Backend API Başarıyla Çalışıyor! 🏎️');
+});
+
+// --- GLOBAL ERROR HANDLER ---
+app.use((err, req, res, next) => {
+  console.error('🔥 Global Hata:', err.stack);
+  
+  res.status(err.status || 500).json({
+    message: err.message || 'Sunucuda beklenmeyen bir hata oluştu.',
+    error: process.env.NODE_ENV === 'development' ? err : {}
+  });
 });
 
 const PORT = process.env.PORT || 5000;

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link, useLocation } from 'react-router-dom'; // useLocation eklendi
 import { LogIn, User, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { API_URL } from '../config';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
   const navigate = useNavigate();
@@ -17,13 +17,14 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
       const { data } = await axios.post(`${API_URL}/auth/login`, { email, password });
       
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+
+      toast.success(data.message || 'Başarıyla giriş yapıldı!');
 
       // YENİ: Akıllı Yönlendirme Mantığı
       // Eğer bir sayfadan (örneğin QR sayfası) buraya şutlandıysak oraya geri dön, 
@@ -32,7 +33,7 @@ const Login = () => {
       navigate(origin);
 
     } catch (err) {
-      setError(err.response?.data?.message || 'Giriş yapılamadı. Bilgileri kontrol edin.');
+      toast.error(err.response?.data?.message || 'Giriş yapılamadı. Bilgileri kontrol edin.');
     } finally {
       setLoading(false);
     }
@@ -49,12 +50,6 @@ const Login = () => {
           </h1>
           <p className="text-gray-400 text-sm mt-2">Üye Takip Sistemi Girişi</p>
         </div>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-lg mb-6 text-center">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div className="relative">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 // X ikonunu da ekledik (Modalı kapatmak için)
 import { LogOut, User, ShieldAlert, Car, CalendarPlus, ClipboardList, QrCode, TrendingUp, Activity, Settings, Building2, Megaphone, Bell, X } from 'lucide-react'; 
 
@@ -10,7 +11,22 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
   const [selectedAnn, setSelectedAnn] = useState(null); // Tıklanan duyuruyu tutar
+  const [stats, setStats] = useState({ todayAttendanceCount: 0, pendingLeaveCount: 0 }); // Admin Özet istatistikleri
   const navigate = useNavigate();
+
+  const fetchAdminStats = async (token) => {
+    try {
+      const attRes = await axios.get(`${API}/attendance/today`, { headers: { Authorization: `Bearer ${token}` } });
+      const todayCount = attRes.data.length || 0;
+
+      const leaveRes = await axios.get(`${API}/leave`, { headers: { Authorization: `Bearer ${token}` } });
+      const pendingCount = leaveRes.data.filter(l => !l.status || l.status === 'Bekliyor').length || 0;
+
+      setStats({ todayAttendanceCount: todayCount, pendingLeaveCount: pendingCount });
+    } catch (err) {
+      console.error("Yönetici istatistikleri alınamadı", err);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -19,17 +35,23 @@ const Dashboard = () => {
     if (!token || !userData) {
       navigate('/login');
     } else {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
       // Kullanıcıya özel duyuruları çekiyoruz
       axios.get(`${API}/announcements`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => setAnnouncements(res.data))
         .catch(err => console.error("Duyurular alınamadı", err));
+        
+      if (parsedUser.role === 'admin' || parsedUser.role === 'superadmin') {
+        fetchAdminStats(token);
+      }
     }
   }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    toast.success('Başarıyla çıkış yapıldı!');
     navigate('/login');
   };
 
@@ -88,6 +110,31 @@ const Dashboard = () => {
             Burası senin ana merkezin. Aşağıdaki menüleri kullanarak işlemlerini yapabilirsin.
           </p>
         </div>
+
+        {/* YÖNETİCİ ÖZET KARTLARI */}
+        {(user.role === 'admin' || user.role === 'superadmin') && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <Link to="/admin/attendance-log" className="bg-gradient-to-br from-green-500/20 to-green-600/5 border border-green-500/20 hover:border-green-500/50 p-6 rounded-2xl flex items-center justify-between transition-all group cursor-pointer">
+              <div>
+                <p className="text-sm text-green-500 font-bold mb-1 group-hover:text-green-400 transition-colors">Bugünkü Yoklama</p>
+                <h3 className="text-3xl font-black text-white">{stats.todayAttendanceCount} <span className="text-sm font-normal text-gray-400">kişi</span></h3>
+              </div>
+              <div className="bg-green-500/20 p-4 rounded-full text-green-500 group-hover:scale-110 transition-transform">
+                <TrendingUp size={32} />
+              </div>
+            </Link>
+
+            <Link to="/admin/leaves" className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/5 border border-yellow-500/20 hover:border-yellow-500/50 p-6 rounded-2xl flex items-center justify-between transition-all group cursor-pointer">
+              <div>
+                <p className="text-sm text-yellow-500 font-bold mb-1 group-hover:text-yellow-400 transition-colors">Bekleyen İzinler</p>
+                <h3 className="text-3xl font-black text-white">{stats.pendingLeaveCount} <span className="text-sm font-normal text-gray-400">talep</span></h3>
+              </div>
+              <div className="bg-yellow-500/20 p-4 rounded-full text-yellow-500 group-hover:scale-110 transition-transform">
+                <ClipboardList size={32} />
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* --- DUYURULAR BÖLÜMÜ (Sadeleştirilmiş ve Tıklanabilir) --- */}
         {announcements.length > 0 && (

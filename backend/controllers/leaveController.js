@@ -125,7 +125,11 @@ exports.deleteMyLeave = async (req, res) => {
 exports.getAllLeaveRequests = async (req, res) => {
   try {
     const leaves = await LeaveRequest.find()
-      .populate('userId', 'name email studentId')
+      .populate({
+        path: 'userId',
+        select: 'name email studentId departmentId',
+        populate: { path: 'departmentId', select: 'name' }
+      })
       .sort({ createdAt: -1 });
       
     const formattedLeaves = leaves.map(leave => ({

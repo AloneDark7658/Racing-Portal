@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../config';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, User, Mail, Lock, CreditCard, Loader2, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -13,7 +14,6 @@ const Register = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -22,20 +22,20 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Şifre ve şifre tekrarı eşleşmiyor!');
+      toast.error('Şifre ve şifre tekrarı eşleşmiyor!');
       setLoading(false);
       return;
     }
 
     try {
       await axios.post(`${API_URL}/auth/register`, formData);
+      toast.success('Kayıt başarılı! Giriş yapabilirsiniz.');
       // Kayıt başarılıysa direkt Login sayfasına gönder
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.message || 'Kayıt sırasında bir hata oluştu.');
+      toast.error(err.response?.data?.message || 'Kayıt sırasında bir hata oluştu.');
     } finally {
       setLoading(false);
     }
@@ -53,12 +53,6 @@ const Register = () => {
           </h1>
           <p className="text-gray-400 text-sm mt-2">Yeni Üye Kayıt Formu</p>
         </div>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-lg mb-6 text-center">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div className="relative">
