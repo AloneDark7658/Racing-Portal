@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link, useLocation } from 'react-router-dom'; // useLocation eklendi
-import { LogIn, User, Lock, Loader2 } from 'lucide-react';
+import { LogIn, User, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import { API_URL } from '../config';
 
 const Login = () => {
@@ -9,6 +9,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation(); // YENİ: Nereden geldiğimizi anlamak için
@@ -71,13 +72,20 @@ const Login = () => {
           <div className="relative">
             <Lock className="absolute left-3 top-3 text-gray-500" size={20} />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Şifre"
               className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-10 text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <button
+              type="button"
+              className="absolute right-3 top-3 text-gray-500 hover:text-white transition-colors"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </div>
 
           <div className="flex justify-end mt-[-10px] mb-2">

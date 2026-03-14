@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, CreditCard, Lock, Loader2, ArrowLeft, Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { User, Mail, CreditCard, Lock, Loader2, ArrowLeft, Save, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 // 1. ADIM: API_URL'i config dosyasından içe aktarıyoruz
 import { API_URL } from '../config'; 
 
@@ -17,6 +17,9 @@ const Profile = () => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
@@ -197,30 +200,57 @@ const Profile = () => {
                 <Lock size={16} /> Şifre Değiştir (İsteğe bağlı)
               </h3>
               <div className="space-y-4">
-                <input
-                  type="password"
-                  name="currentPassword"
-                  value={formData.currentPassword}
-                  onChange={handleChange}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all"
-                  placeholder="Mevcut şifreniz"
-                />
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={formData.newPassword}
-                  onChange={handleChange}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all"
-                  placeholder="Yeni şifre"
-                />
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all"
-                  placeholder="Yeni şifre tekrar"
-                />
+                <div className="relative">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    name="currentPassword"
+                    value={formData.currentPassword}
+                    onChange={handleChange}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all"
+                    placeholder="Mevcut şifreniz"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-4 top-3 text-gray-500 hover:text-white transition-colors"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    name="newPassword"
+                    value={formData.newPassword}
+                    onChange={handleChange}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all"
+                    placeholder="Yeni şifre"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-4 top-3 text-gray-500 hover:text-white transition-colors"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all"
+                    placeholder="Yeni şifre tekrar"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-4 top-3 text-gray-500 hover:text-white transition-colors"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
               <p className="text-xs text-gray-500 mt-2">Şifre değiştirmek istemiyorsanız bu alanları boş bırakın.</p>
             </div>

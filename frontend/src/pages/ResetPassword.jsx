@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Lock, Loader2, CheckCircle } from 'lucide-react';
+import { Lock, Loader2, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -10,6 +10,8 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // URL'den gelen token'ı yakalıyoruz
   const { token } = useParams();
@@ -74,7 +76,7 @@ const ResetPassword = () => {
             <div className="relative">
               <Lock className="absolute left-3 top-3 text-gray-500" size={20} />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Yeni Şifre"
                 className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-10 text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                 value={password}
@@ -82,12 +84,19 @@ const ResetPassword = () => {
                 required
                 minLength="6"
               />
+              <button
+                type="button"
+                className="absolute right-3 top-3 text-gray-500 hover:text-white transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
 
             <div className="relative">
               <Lock className="absolute left-3 top-3 text-gray-500" size={20} />
               <input
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 placeholder="Yeni Şifreyi Onayla"
                 className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-10 text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                 value={confirmPassword}
@@ -95,6 +104,13 @@ const ResetPassword = () => {
                 required
                 minLength="6"
               />
+              <button
+                type="button"
+                className="absolute right-3 top-3 text-gray-500 hover:text-white transition-colors"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
 
             <button

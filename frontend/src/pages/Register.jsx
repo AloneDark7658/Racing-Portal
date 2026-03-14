@@ -2,17 +2,20 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, User, Mail, Lock, CreditCard, Loader2 } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, CreditCard, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     studentId: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const navigate = useNavigate();
 
@@ -20,6 +23,12 @@ const Register = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Şifre ve şifre tekrarı eşleşmiyor!');
+      setLoading(false);
+      return;
+    }
 
     try {
       await axios.post(`${API_URL}/auth/register`, formData);
@@ -88,12 +97,37 @@ const Register = () => {
           <div className="relative">
             <Lock className="absolute left-3 top-3 text-gray-500" size={20} />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Şifre"
               className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-10 text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
               onChange={(e) => setFormData({...formData, password: e.target.value})}
               required
             />
+            <button
+              type="button"
+              className="absolute right-3 top-3 text-gray-500 hover:text-white transition-colors"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+
+          <div className="relative">
+            <Lock className="absolute left-3 top-3 text-gray-500" size={20} />
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Şifre Tekrar"
+              className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-10 text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
+              onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+              required
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-3 text-gray-500 hover:text-white transition-colors"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </div>
 
           <button
