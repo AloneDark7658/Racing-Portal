@@ -36,4 +36,7 @@ const attendanceSchema = new mongoose.Schema({
 
 });
 
+// --- FAZ 2: Performans için compound index ---
+attendanceSchema.index({ userId: 1, date: 1 });
+
 module.exports = mongoose.model('Attendance', attendanceSchema);

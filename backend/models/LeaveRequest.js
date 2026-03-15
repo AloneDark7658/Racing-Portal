@@ -29,4 +29,7 @@ const leaveRequestSchema = new mongoose.Schema({
   }
 });
 
+// --- FAZ 2: Performans için compound index ---
+leaveRequestSchema.index({ userId: 1, requestedDate: 1 });
+
 module.exports = mongoose.model('LeaveRequest', leaveRequestSchema);

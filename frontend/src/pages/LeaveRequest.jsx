@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useFormDraft from '../hooks/useFormDraft';
 import axios from 'axios';
 import { API_URL } from '../config';
 import { useNavigate, Link } from 'react-router-dom';
@@ -8,8 +9,8 @@ import {
 } from 'lucide-react';
 
 const LeaveRequest = () => {
-  const [requestedDate, setRequestedDate] = useState('');
-  const [reason, setReason] = useState('');
+  // FAZ 2: Form taslak (draft) desteği — sayfa yenilendiğinde veri kaybolmaz
+  const [draft, setDraft, clearDraft] = useFormDraft('leave-request', { requestedDate: '', reason: '' });
   const [myLeaves, setMyLeaves] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
@@ -54,12 +55,11 @@ const LeaveRequest = () => {
     try {
       const { data } = await axios.post(
         `${API_URL}/leave`,
-        { requestedDate, reason },
+        { requestedDate: draft.requestedDate, reason: draft.reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(data.message);
-      setRequestedDate('');
-      setReason('');
+      clearDraft(); // Taslağı temizle
       setShowMobileForm(false); // Formu kapatalım
       fetchMyLeaves(); 
     } catch (err) {
@@ -139,16 +139,16 @@ const LeaveRequest = () => {
                   type="date"
                   min={today}
                   className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all [&::-webkit-calendar-picker-indicator]:invert"
-                  value={requestedDate}
-                  onChange={(e) => setRequestedDate(e.target.value)}
+                  value={draft.requestedDate}
+                  onChange={(e) => setDraft({...draft, requestedDate: e.target.value})}
                   required
                 />
                 <textarea
                   placeholder="Mazeretiniz..."
                   rows="4"
                   className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all resize-none"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
+                  value={draft.reason}
+                  onChange={(e) => setDraft({...draft, reason: e.target.value})}
                   required
                 ></textarea>
                 <button
@@ -280,16 +280,16 @@ const LeaveRequest = () => {
                 type="date"
                 min={today}
                 className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all [&::-webkit-calendar-picker-indicator]:invert"
-                value={requestedDate}
-                onChange={(e) => setRequestedDate(e.target.value)}
+                value={draft.requestedDate}
+                onChange={(e) => setDraft({...draft, requestedDate: e.target.value})}
                 required
               />
               <textarea
                 placeholder="Mazeretiniz..."
                 rows="4"
                 className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-all resize-none"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                value={draft.reason}
+                onChange={(e) => setDraft({...draft, reason: e.target.value})}
                 required
               ></textarea>
               <button

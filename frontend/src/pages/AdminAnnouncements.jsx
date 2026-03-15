@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useFormDraft from '../hooks/useFormDraft';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Megaphone, Plus, Trash2, Loader2, Send, Clock } from 'lucide-react'; // Clock eklendi
@@ -12,7 +13,8 @@ const AdminAnnouncements = () => {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   
-  const [form, setForm] = useState({ title: '', content: '', targetDepartments: [] });
+  // FAZ 2: Form taslak (draft) desteği — sayfa yenilendiğinde veri kaybolmaz
+  const [form, setForm, clearDraft] = useFormDraft('announcement-form', { title: '', content: '', targetDepartments: [] });
   
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
@@ -58,7 +60,7 @@ const AdminAnnouncements = () => {
     try {
       await axios.post(`${API}/announcements`, form, { headers: { Authorization: `Bearer ${token}` } });
       setModalOpen(false);
-      setForm({ title: '', content: '', targetDepartments: [] });
+      clearDraft(); // Taslağı temizle
       fetchData();
     } catch (error) {
       alert('Duyuru oluşturulamadı.');
@@ -171,7 +173,7 @@ const AdminAnnouncements = () => {
                   </div>
                 </div>
                 <div className="flex gap-2 pt-4">
-                  <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-3 border border-white/20 rounded-xl hover:bg-white/5 font-bold">İptal</button>
+                  <button type="button" onClick={() => { setModalOpen(false); clearDraft(); }} className="flex-1 py-3 border border-white/20 rounded-xl hover:bg-white/5 font-bold">İptal</button>
                   <button type="submit" disabled={submitLoading} className="flex-1 bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
                     {submitLoading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />} Gönder
                   </button>

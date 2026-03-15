@@ -30,10 +30,10 @@ app.use(express.json());
 app.use(helmet());
 
 // --- GLOBAL RATE LIMITER (FAZ 1) ---
-// Tüm API'ler için IP başına 15 dakikada 100 istek sınırı
+// Tüm API'ler için IP başına 15 dakikada 500 istek sınırı
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 dakika
-  max: 100, // IP başına en fazla 100 istek
+  max: 500, // IP başına en fazla 500 istek (dev ortamında HMR nedeniyle yüksek tutuldu)
   message: {
     message: 'Çok fazla istek gönderdiniz, lütfen biraz bekleyin.'
   },

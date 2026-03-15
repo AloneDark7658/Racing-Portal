@@ -171,15 +171,35 @@ exports.getTodayAttendance = async (req, res) => {
   }
 };
 
-// 5. LİDERLİK TABLOSU ÖZETİ (Admin İçin - İZİNLİ DESTEKLİ)
+// 5. LİDERLİK TABLOSU ÖZETİ (Admin İçin - N+1 SORGU OPTİMİZE EDİLDİ - FAZ 2)
 exports.getAttendanceSummary = async (req, res) => {
   try {
     const sessions = await AttendanceSession.find().sort({ date: 1 });
     const users = await User.find().select('name role studentId departmentId').populate('departmentId', 'name');
     
-    const summary = await Promise.all(users.map(async (user) => {
-      const userAtts = await Attendance.find({ userId: user._id });
-      const userLeaves = await Leave.find({ userId: user._id, status: 'Onaylandı' });
+    // TEK SORGUDA tüm yoklama ve izin kayıtlarını çek (N+1 yerine 2 sorgu)
+    const allAttendances = await Attendance.find().lean();
+    const allLeaves = await Leave.find({ status: 'Onaylandı' }).lean();
+
+    // Hafızada kullanıcı bazlı grupla (Map ile O(1) erişim)
+    const attByUser = {};
+    allAttendances.forEach(a => {
+      const uid = a.userId.toString();
+      if (!attByUser[uid]) attByUser[uid] = [];
+      attByUser[uid].push(a);
+    });
+
+    const leaveByUser = {};
+    allLeaves.forEach(l => {
+      const uid = l.userId.toString();
+      if (!leaveByUser[uid]) leaveByUser[uid] = [];
+      leaveByUser[uid].push(l);
+    });
+
+    const summary = users.map(user => {
+      const uid = user._id.toString();
+      const userAtts = attByUser[uid] || [];
+      const userLeaves = leaveByUser[uid] || [];
 
       let green = 0, yellow = 0, red = 0, leave = 0;
 
@@ -193,7 +213,6 @@ exports.getAttendanceSummary = async (req, res) => {
           else if (att.colorCode === 'yellow' || att.colorCode === 'orange') yellow++;
           else if (att.colorCode === 'red') red++;
         } else {
-          // requestedDate üzerinden tarih kontrolü
           const isOnLeave = userLeaves.find(l => formatDate(l.requestedDate) === sDate);
           if (isOnLeave) leave++;
         }
@@ -211,7 +230,7 @@ exports.getAttendanceSummary = async (req, res) => {
         absent: absent < 0 ? 0 : absent,
         totalSessions: sessions.length
       };
-    }));
+    });
 
     res.status(200).json(summary);
   } catch (error) {

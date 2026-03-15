@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { 
   ArrowLeft, Building2, Plus, Pencil, Trash2, Clock, Users, 
-  X, Save, Loader2, AlertCircle, UserPlus 
+  X, Save, Loader2, AlertCircle, UserPlus, Shield, User, Search 
 } from 'lucide-react';
 
 const DAY_NAMES = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -18,6 +19,8 @@ const AdminDepartments = () => {
   const [activeTab, setActiveTab] = useState('departments');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [roleSearch, setRoleSearch] = useState('');
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -60,8 +63,29 @@ const AdminDepartments = () => {
   };
 
   useEffect(() => {
-    if (activeTab === 'assign' && token) fetchUsers();
+    if ((activeTab === 'assign' || activeTab === 'roles') && token) fetchUsers();
   }, [activeTab, token]);
+
+  // --- ROL DEĞİŞTİRME (Departman sayfasına taşındı) ---
+  const handleRoleChange = async (userId, userName, newRole) => {
+    const roleLabel = newRole === 'admin' ? 'Yönetici' : 'Üye';
+    if (!window.confirm(`${userName} kullanıcısını "${roleLabel}" yapmak istediğinize emin misiniz?`)) return;
+    try {
+      const res = await axios.put(`${USER_API}/${userId}/role`, { role: newRole }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(res.data.message);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Rol değiştirme başarısız!');
+    }
+  };
+
+  const getRoleBadge = (role) => {
+    if (role === 'superadmin') return { label: 'Super Admin', classes: 'text-purple-400 bg-purple-500/10 border-purple-500/30' };
+    if (role === 'admin') return { label: 'Yönetici', classes: 'text-red-400 bg-red-500/10 border-red-500/30' };
+    return { label: 'Üye', classes: 'text-gray-400 bg-white/5 border-white/10' };
+  };
 
   const openAdd = () => {
     setEditingId(null);
@@ -216,9 +240,76 @@ const AdminDepartments = () => {
             <UserPlus size={16} className="inline mr-2" />
             Üye Atama
           </button>
+          <button
+            onClick={() => { setActiveTab('roles'); setError(''); fetchUsers(); }}
+            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+              activeTab === 'roles' ? 'bg-red-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+          >
+            <Shield size={16} className="inline mr-2" />
+            Yöneticileri Yönet
+          </button>
         </div>
 
-        {activeTab === 'assign' ? (
+        {activeTab === 'roles' ? (
+          /* --- YÖNETİCİ ATAMA SEKMESİ --- */
+          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-white/10">
+              <h3 className="font-bold">Yönetici Atamaları</h3>
+              <p className="text-sm text-gray-400">Üyelere admin yetkisi verin veya geri alın.</p>
+            </div>
+            <div className="p-4 border-b border-white/5">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
+                <input 
+                  type="text" placeholder="İsim ile ara..." 
+                  className="w-full bg-black/40 border border-white/10 p-2 pl-10 rounded-xl text-sm focus:outline-none focus:border-red-600"
+                  value={roleSearch}
+                  onChange={(e) => setRoleSearch(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto">
+              {users
+                .filter(u => u.name.toLowerCase().includes(roleSearch.toLowerCase()))
+                .map(user => {
+                  return (
+                    <div key={user._id} className="flex items-center justify-between p-4 hover:bg-white/5">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <span className="font-semibold">{user.name}</span>
+                          <span className="text-gray-500 text-xs ml-2">{user.email}</span>
+                        </div>
+                      </div>
+                      {user._id !== currentUser.id ? (
+                        <div className="flex bg-black/40 rounded-lg border border-white/10 overflow-hidden">
+                          {[
+                            { value: 'member', label: 'Üye', activeClasses: 'bg-gray-500/30 text-white' },
+                            { value: 'admin', label: 'Admin', activeClasses: 'bg-red-600/30 text-red-400' },
+                            { value: 'superadmin', label: 'S.Admin', activeClasses: 'bg-purple-600/30 text-purple-400' },
+                          ].map(opt => (
+                            <button
+                              key={opt.value}
+                              onClick={() => user.role !== opt.value && handleRoleChange(user._id, user.name, opt.value)}
+                              className={`text-[11px] px-3 py-1.5 font-bold transition-all ${
+                                user.role === opt.value
+                                  ? opt.activeClasses
+                                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-gray-500 italic">Kendiniz</span>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        ) : activeTab === 'assign' ? (
           <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
             <div className="p-4 border-b border-white/10">
               <h3 className="font-bold">Üyeleri departmanlara ata</h3>

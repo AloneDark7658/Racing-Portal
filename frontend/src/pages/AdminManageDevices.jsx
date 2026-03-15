@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ArrowLeft, Smartphone, Trash2, Search, UserCheck, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 import { API_URL as API } from '../config';
 
@@ -30,10 +31,10 @@ const AdminManageDevices = () => {
         await axios.put(`${API}/users/${id}/reset-device`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        alert("Cihaz başarıyla sıfırlandı.");
+        toast.success("Cihaz başarıyla sıfırlandı.");
         fetchUsers();
       } catch (err) {
-        alert("Sıfırlama hatası!");
+        toast.error("Sıfırlama hatası!");
       }
     }
   };
