@@ -21,6 +21,33 @@ import BottomNav from './components/BottomNav';
 import AttendanceHub from './pages/AttendanceHub';
 import LeaveHub from './pages/LeaveHub';
 
+// --- ROTA KORUMA BİLEŞENLERİ (FAZ 1) ---
+// Token yoksa kullanıcıyı login'e yönlendirir
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+// Admin/Superadmin rolü yoksa dashboard'a yönlendirir
+const AdminRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  try {
+    const userData = JSON.parse(localStorage.getItem('user'));
+    if (!userData || (userData.role !== 'admin' && userData.role !== 'superadmin')) {
+      return <Navigate to="/dashboard" replace />;
+    }
+  } catch {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
 const AppContent = () => {
   const location = useLocation();
   const hideNavPages = ['/login', '/register', '/forgot-password'];
@@ -29,28 +56,29 @@ const AppContent = () => {
   return (
     <div className={!isAuthPage ? "pb-20 md:pb-0 font-sans min-h-screen bg-[#0f0f0f] text-white" : "font-sans min-h-screen bg-[#0f0f0f] text-white"}>
       <Routes>
+        {/* --- HERKESE AÇIK (AUTH) SAYFALARI --- */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/leave-request" element={<LeaveRequest />} />
-        <Route path="/admin/attendance-log" element={<AdminAttendanceLog />} />
-        <Route path="/my-performance" element={<MyPerformance />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/admin/manage-devices" element={<AdminManageDevices />} />
-        <Route path="/admin/qr-generate" element={<AdminQR />} />
 
-        <Route path="/admin/leaves" element={<AdminLeaves />} />
-        <Route path="/admin/departments" element={<AdminDepartments />} />
-        
-        {/* --- YENİ EKLENEN DUYURU ROTALARI --- */}
-        <Route path="/attendance-hub" element={<AttendanceHub />} />
-        <Route path="/leave-hub" element={<LeaveHub />} />
-        <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-        <Route path="/announcements" element={<Announcements />} />
+        {/* --- GİRİŞ YAPMIŞ ÜYE ROTALARI (ProtectedRoute) --- */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/leave-request" element={<ProtectedRoute><LeaveRequest /></ProtectedRoute>} />
+        <Route path="/my-performance" element={<ProtectedRoute><MyPerformance /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/attendance-hub" element={<ProtectedRoute><AttendanceHub /></ProtectedRoute>} />
+        <Route path="/leave-hub" element={<ProtectedRoute><LeaveHub /></ProtectedRoute>} />
+        <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
+        <Route path="/direct-scan" element={<ProtectedRoute><DirectScan /></ProtectedRoute>} />
 
-        <Route path="/direct-scan" element={<DirectScan />} />
+        {/* --- ADMİN ROTALARI (AdminRoute) --- */}
+        <Route path="/admin/attendance-log" element={<AdminRoute><AdminAttendanceLog /></AdminRoute>} />
+        <Route path="/admin/manage-devices" element={<AdminRoute><AdminManageDevices /></AdminRoute>} />
+        <Route path="/admin/qr-generate" element={<AdminRoute><AdminQR /></AdminRoute>} />
+        <Route path="/admin/leaves" element={<AdminRoute><AdminLeaves /></AdminRoute>} />
+        <Route path="/admin/departments" element={<AdminRoute><AdminDepartments /></AdminRoute>} />
+        <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
         
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

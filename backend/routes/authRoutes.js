@@ -48,7 +48,7 @@ router.post('/register', authLimiter, validate(registerValidation), register);
 router.post('/login', authLimiter, validate(loginValidation), login);
 
 // --- YENİ EKLENEN ŞİFRE SIFIRLAMA ROTALARI ---
-router.post('/forgotpassword', forgotPassword);
+router.post('/forgotpassword', authLimiter, forgotPassword); // FAZ 1: Rate-limit eklendi
 router.put('/resetpassword/:token', resetPassword);
 
 module.exports = router;

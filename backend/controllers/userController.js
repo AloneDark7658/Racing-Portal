@@ -17,19 +17,6 @@ exports.updateDepartment = async (req, res) => {
   }
 };
 
-// --- TÜM KULLANICILARI LİSTELE (Sadece Admin - departman ataması için) ---
-exports.listAll = async (req, res) => {
-  try {
-    const users = await User.find()
-      .select('name email studentId role departmentId')
-      .populate('departmentId', 'name')
-      .sort({ name: 1 })
-      .lean();
-    res.status(200).json(users);
-  } catch (error) {
-    res.status(500).json({ message: 'Kullanıcılar yüklenemedi.' });
-  }
-};
 
 // --- GİRİŞ YAPAN KULLANICININ PROFİLİNİ GETİR (Şifre hariç) ---
 exports.getProfile = async (req, res) => {

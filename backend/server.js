@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 // 1. .env dosyasındaki ortam değişkenlerini EN BAŞTA okumak en güvenlisidir
 dotenv.config();
@@ -22,11 +23,24 @@ app.use(cors({
   origin: [
     'http://localhost:5173', 
     process.env.FRONTEND_URL // Deploy edildiğinde bu değişken devreye girecek
-  ],
+  ].filter(Boolean), // undefined değerleri temizle (FAZ 1)
   credentials: true
 }));
 app.use(express.json()); 
 app.use(helmet());
+
+// --- GLOBAL RATE LIMITER (FAZ 1) ---
+// Tüm API'ler için IP başına 15 dakikada 100 istek sınırı
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 dakika
+  max: 100, // IP başına en fazla 100 istek
+  message: {
+    message: 'Çok fazla istek gönderdiniz, lütfen biraz bekleyin.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api', globalLimiter);
 
 // --- ROTALAR (API Uç Noktaları) ---
 // (Fazladan yazılmış olan kopya '/api/auth' rotası silindi)
