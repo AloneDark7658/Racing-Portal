@@ -8,7 +8,7 @@ exports.updateDepartment = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { departmentId: departmentId || null },
-      { new: true }
+      { returnDocument: 'after' }
     ).select('-password');
     if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
     res.status(200).json({ message: 'Departman güncellendi.', user });

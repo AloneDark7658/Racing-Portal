@@ -20,6 +20,7 @@ import Announcements from './pages/Announcements';
 import BottomNav from './components/BottomNav';
 import AttendanceHub from './pages/AttendanceHub';
 import LeaveHub from './pages/LeaveHub';
+import TaskBoard from './pages/TaskBoard';
 
 // --- ROTA KORUMA BİLEŞENLERİ (FAZ 1) ---
 // Token yoksa kullanıcıyı login'e yönlendirir
@@ -71,6 +72,7 @@ const AppContent = () => {
         <Route path="/leave-hub" element={<ProtectedRoute><LeaveHub /></ProtectedRoute>} />
         <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
         <Route path="/direct-scan" element={<ProtectedRoute><DirectScan /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><TaskBoard /></ProtectedRoute>} />
 
         {/* --- ADMİN ROTALARI (AdminRoute) --- */}
         <Route path="/admin/attendance-log" element={<AdminRoute><AdminAttendanceLog /></AdminRoute>} />

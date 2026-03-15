@@ -111,8 +111,8 @@ const LeaveRequest = () => {
     <div className="min-h-screen bg-[#0f0f0f] text-white p-2 md:p-8 relative pb-24 md:pb-8">
       <div className="max-w-6xl mx-auto">
         
-        <div className="flex items-center gap-4 mb-10">
-          <Link to="/dashboard" className="p-2 bg-white/5 hover:bg-red-600/20 hover:text-red-500 rounded-lg transition-all border border-white/10">
+        <div className="flex items-center gap-4 mb-8 bg-white/5 p-4 rounded-2xl border border-white/10">
+          <Link to="/leave-hub" className="p-2 bg-white/5 hover:bg-red-600/20 hover:text-red-500 rounded-lg transition-all border border-white/10">
             <ArrowLeft size={24} />
           </Link>
           <div>
@@ -261,7 +261,7 @@ const LeaveRequest = () => {
       {/* MOBİL MODAL: TALEP FORMU */}
       {showMobileForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 lg:hidden">
-          <div className="bg-[#141414] border-t sm:border border-white/10 p-6 rounded-t-3xl sm:rounded-3xl w-full max-w-md relative animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+          <div className="bg-[#141414] border-t sm:border border-white/10 p-6 pb-24 sm:pb-6 rounded-t-3xl sm:rounded-3xl w-full max-w-md relative animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
             <button 
               onClick={() => setShowMobileForm(false)} 
               className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"

@@ -26,8 +26,12 @@ app.use(cors({
   ].filter(Boolean), // undefined değerleri temizle (FAZ 1)
   credentials: true
 }));
-app.use(express.json()); 
+app.use(express.json({ limit: '10mb' })); 
 app.use(helmet());
+
+// Yüklenen dosyaları statik olarak sun
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- GLOBAL RATE LIMITER (FAZ 1) ---
 // Tüm API'ler için IP başına 15 dakikada 500 istek sınırı
@@ -51,6 +55,7 @@ app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/departments', require('./routes/departmentRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
+app.use('/api/tasks', require('./routes/taskRoutes'));
 
 // --- Test Rotası ---
 app.get('/', (req, res) => {

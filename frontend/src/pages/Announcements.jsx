@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, Megaphone, X, Calendar, Clock } from 'lucide-react'; // Clock eklendi
+import { ArrowLeft, Bell, Megaphone, X, Calendar, Clock, FileText, Download, Paperclip } from 'lucide-react';
 
 import { API_URL as API } from '../config';
+const BACKEND_URL = API.replace('/api', '');
 
 const Announcements = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -80,8 +81,13 @@ const Announcements = () => {
                 <p className="text-sm text-gray-400 mt-2 line-clamp-1">
                   {ann.content}
                 </p>
-                <div className="text-xs text-blue-500 mt-3 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="text-xs text-blue-500 mt-3 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                   Devamını okumak için tıkla &rarr;
+                  {ann.attachments && ann.attachments.length > 0 && (
+                    <span className="flex items-center gap-1 bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 opacity-100">
+                      <Paperclip size={10} /> {ann.attachments.length} dosya
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -108,6 +114,31 @@ const Announcements = () => {
                 <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
                   {selectedAnn.content}
                 </p>
+                {/* Ek Dosyalar */}
+                {selectedAnn.attachments && selectedAnn.attachments.length > 0 && (
+                  <div className="mt-6 pt-4 border-t border-white/10">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-1"><Paperclip size={12} /> Ek Dosyalar</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedAnn.attachments.map((file, i) => (
+                        <a
+                          key={i}
+                          href={`${BACKEND_URL}/uploads/${file.filename}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 bg-black/40 border border-white/10 hover:border-blue-500/50 px-3 py-2 rounded-lg text-sm text-blue-400 transition-all group"
+                        >
+                          {file.mimetype?.startsWith('image/') ? (
+                            <img src={`${BACKEND_URL}/uploads/${file.filename}`} alt="" className="w-6 h-6 rounded object-cover" />
+                          ) : (
+                            <FileText size={16} />
+                          )}
+                          <span className="max-w-[200px] truncate">{file.originalName}</span>
+                          <Download size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="p-4 border-t border-white/10 bg-black/40 text-right">
                 <button onClick={() => setSelectedAnn(null)} className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl font-bold transition-colors">

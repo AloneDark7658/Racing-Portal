@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import useFormDraft from '../hooks/useFormDraft';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Megaphone, Plus, Trash2, Loader2, Send, Clock } from 'lucide-react'; // Clock eklendi
+import { ArrowLeft, Megaphone, Plus, Trash2, Loader2, Send, Clock, Paperclip, FileText, Download } from 'lucide-react';
 
 import { API_URL as API } from '../config';
+const BACKEND_URL = API.replace('/api', '');
 
 const AdminAnnouncements = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -12,6 +13,7 @@ const AdminAnnouncements = () => {
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [files, setFiles] = useState([]);
   
   // FAZ 2: Form taslak (draft) desteği — sayfa yenilendiğinde veri kaybolmaz
   const [form, setForm, clearDraft] = useFormDraft('announcement-form', { title: '', content: '', targetDepartments: [] });
@@ -58,9 +60,18 @@ const AdminAnnouncements = () => {
     e.preventDefault();
     setSubmitLoading(true);
     try {
-      await axios.post(`${API}/announcements`, form, { headers: { Authorization: `Bearer ${token}` } });
+      const formData = new FormData();
+      formData.append('title', form.title);
+      formData.append('content', form.content);
+      formData.append('targetDepartments', JSON.stringify(form.targetDepartments));
+      files.forEach(f => formData.append('files', f));
+
+      await axios.post(`${API}/announcements`, formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+      });
       setModalOpen(false);
-      clearDraft(); // Taslağı temizle
+      clearDraft();
+      setFiles([]);
       fetchData();
     } catch (error) {
       alert('Duyuru oluşturulamadı.');
@@ -138,6 +149,28 @@ const AdminAnnouncements = () => {
                       ))
                     )}
                   </div>
+                  {/* Ek Dosyalar */}
+                  {ann.attachments && ann.attachments.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {ann.attachments.map((file, i) => (
+                        <a
+                          key={i}
+                          href={`${BACKEND_URL}/uploads/${file.filename}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 bg-black/40 border border-white/10 hover:border-blue-500/50 px-3 py-1.5 rounded-lg text-xs text-blue-400 transition-all group"
+                        >
+                          {file.mimetype?.startsWith('image/') ? (
+                            <img src={`${BACKEND_URL}/uploads/${file.filename}`} alt="" className="w-5 h-5 rounded object-cover" />
+                          ) : (
+                            <FileText size={14} />
+                          )}
+                          <span className="max-w-[120px] truncate">{file.originalName}</span>
+                          <Download size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button onClick={() => handleDelete(ann._id)} className="text-gray-500 hover:text-red-500 self-start p-2 bg-black/20 rounded-lg">
                   <Trash2 size={20} />
@@ -171,6 +204,22 @@ const AdminAnnouncements = () => {
                       </label>
                     ))}
                   </div>
+                </div>
+                {/* Dosya Ekleme */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Dosya Ekle (Opsiyonel)</label>
+                  <label className="flex items-center gap-2 p-3 bg-black/40 border border-dashed border-white/20 hover:border-red-500/50 rounded-xl cursor-pointer transition-colors">
+                    <Paperclip size={16} className="text-gray-400" />
+                    <span className="text-sm text-gray-400">{files.length > 0 ? `${files.length} dosya seçildi` : 'Resim, PDF, döküman ekleyin...'}</span>
+                    <input type="file" multiple onChange={(e) => setFiles([...e.target.files])} className="sr-only" />
+                  </label>
+                  {files.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {[...files].map((f, i) => (
+                        <span key={i} className="text-[10px] bg-white/10 text-gray-300 px-2 py-1 rounded">{f.name}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2 pt-4">
                   <button type="button" onClick={() => { setModalOpen(false); clearDraft(); }} className="flex-1 py-3 border border-white/20 rounded-xl hover:bg-white/5 font-bold">İptal</button>

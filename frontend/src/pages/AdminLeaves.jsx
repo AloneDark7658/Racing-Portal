@@ -173,7 +173,7 @@ const AdminLeaves = () => {
         {/* Üst Başlık */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="p-2 bg-white/5 hover:bg-red-600/20 hover:text-red-500 rounded-lg transition-colors">
+            <Link to="/leave-hub" className="p-2 bg-white/5 hover:bg-red-600/20 hover:text-red-500 rounded-lg transition-colors">
               <ArrowLeft size={24} />
             </Link>
             <div>

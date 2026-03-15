@@ -10,9 +10,9 @@ const DirectScan = () => {
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  
+
   const navigate = useNavigate();
-  const scannerRef = useRef(null); 
+  const scannerRef = useRef(null);
 
   const getOrCreateDeviceId = () => {
     let deviceId = localStorage.getItem('deviceId');
@@ -35,15 +35,28 @@ const DirectScan = () => {
     const timer = setTimeout(() => {
       if (!isMounted) return;
 
+      // Ekran boyutuna göre dinamik tarama alanı
+      const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+          let minEdgePercentage = 0.7; // Ekranın %70'ini kaplasın
+          let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+          let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+          // 300px'den büyük, 150px'den küçük olmasın
+          qrboxSize = Math.max(150, Math.min(qrboxSize, 300));
+          return {
+              width: qrboxSize,
+              height: qrboxSize
+          };
+      };
+
       // Kamerayı başlat
       scannerRef.current = new Html5QrcodeScanner(
-        "reader", 
-        { 
-          qrbox: { width: 250, height: 250 }, 
-          fps: 10,
+        "reader",
+        {
+          qrbox: qrboxFunction,
+          fps: 20, // Daha hızlı tarama (saniyede 20 kare)
           rememberLastUsedCamera: true
-        }, 
-        false 
+        },
+        false
       );
 
       scannerRef.current.render(
@@ -64,15 +77,22 @@ const DirectScan = () => {
     // SAYFADAN ÇIKIŞ YAPILDIĞINDA (Geri tuşu veya sayfa değişimi)
     return () => {
       isMounted = false;
-      clearTimeout(timer); // Eğer kamera henüz açılmadıysa açılmasını iptal et
+      clearTimeout(timer);
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(e => console.log("Kamera arka planda temizlendi."));
+        try {
+          // Promise tabanlı olduğu için .then/.catch ile güvenli kapat
+          scannerRef.current.clear()
+            .then(() => console.log("Kamera güvenle kapatıldı."))
+            .catch(e => console.log("Kamera kapatılırken ihmal edilebilir hata:", e));
+        } catch (error) {
+           console.log("Tarayıcı uzantısı veya senkron kapatma hatası yakalandı:", error);
+        }
         scannerRef.current = null;
       }
     };
   }, [navigate]);
 
-  
+
   const processQRCode = async (scannedToken) => {
     console.log("Okunan Token:", scannedToken); // Bunu ekle
     setLoading(true);
@@ -88,7 +108,7 @@ const DirectScan = () => {
         { qrToken: scannedToken, deviceId: deviceId },
         { headers: { Authorization: `Bearer ${userToken}` } }
       );
-      
+
       setScanResult({
         message: response.data.message,
         type: response.data.type
@@ -111,13 +131,13 @@ const DirectScan = () => {
         console.log("Kamera kapatılamadı.", e);
       }
     }
-    navigate('/dashboard');
+    navigate('/attendance-hub');
   };
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-        
+
         {/* NORMAL LİNK YERİNE AKILLI BUTON KULLANDIK */}
         <button onClick={handleBack} className="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors">
           <ArrowLeft size={24} />

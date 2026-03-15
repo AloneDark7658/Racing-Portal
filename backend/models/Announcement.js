@@ -20,6 +20,12 @@ const announcementSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Department' 
   }],
+  // Ek dosyalar (resim, PDF, döküman vb.)
+  attachments: [{
+    filename: String,
+    originalName: String,
+    mimetype: String
+  }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

@@ -31,7 +31,8 @@ body {
 
 /* Linkler (Scan an Image File vb.) */
 #reader a {
-  color: #60a5fa !important; /* Mavi renk yaptık belli olsun */
+  color: #60a5fa !important;
+  /* Mavi renk yaptık belli olsun */
   text-decoration: underline !important;
   cursor: pointer !important;
   font-weight: bold !important;

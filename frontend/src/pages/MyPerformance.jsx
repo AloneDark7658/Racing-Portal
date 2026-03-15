@@ -95,8 +95,9 @@ const MyPerformance = () => {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8 font-sans">
       <div className="max-w-6xl mx-auto">
-        <Link to="/dashboard" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-8 transition-colors text-xs font-black uppercase tracking-widest">
-          <ArrowLeft size={16} /> Dashboard'a Dön
+        {/* Üst Kısım: Geri Butonu ve Başlık */}
+        <Link to="/attendance-hub" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-8 transition-colors text-xs font-black uppercase tracking-widest">
+          <ArrowLeft size={16} /> Geri Dön
         </Link>
 
         <h1 className="text-4xl font-black italic mb-10 uppercase tracking-tighter flex items-center gap-4">
@@ -147,8 +148,8 @@ const MyPerformance = () => {
           {graphData.length === 0 ? (
             <div className="text-center py-20 text-gray-700 font-bold italic uppercase tracking-widest">Veri Toplanıyor...</div>
           ) : (
-            <div className="h-[400px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[400px] w-full" style={{ position: 'relative', minHeight: '400px' }}>
+              <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={graphData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
                   <XAxis dataKey="date" stroke="#444" fontSize={10} fontStyle="italic" dy={10} />

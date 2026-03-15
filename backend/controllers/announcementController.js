@@ -1,4 +1,8 @@
 const Announcement = require('../models/Announcement');
+const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
+const fs = require('fs');
+const path = require('path');
 
 // --- 1. DUYURULARI GETİR ---
 exports.getAnnouncements = async (req, res) => {
@@ -33,20 +37,70 @@ exports.getAnnouncements = async (req, res) => {
 // --- 2. DUYURU OLUŞTUR (Sadece Adminler) ---
 exports.createAnnouncement = async (req, res) => {
   try {
-    const { title, content, targetDepartments } = req.body;
+    const { title, content } = req.body;
+    // targetDepartments FormData ile gelince string olarak gelebilir
+    let targetDepartments = req.body.targetDepartments || [];
+    if (typeof targetDepartments === 'string') {
+      try { targetDepartments = JSON.parse(targetDepartments); } catch { targetDepartments = []; }
+    }
 
     if (!title || !content) {
       return res.status(400).json({ message: 'Başlık ve içerik zorunludur.' });
     }
 
+    // Multer'dan gelen dosyaları attachments formatına çevir
+    const attachments = (req.files || []).map(f => ({
+      filename: f.filename,
+      originalName: f.originalname,
+      mimetype: f.mimetype
+    }));
+
     const announcement = new Announcement({
       title,
       content,
       author: req.user._id,
-      targetDepartments: targetDepartments || [] // Eğer departman seçilmediyse boş liste yap
+      targetDepartments,
+      attachments
     });
 
     await announcement.save();
+
+    // E-posta Bildirimi Gönderme
+    try {
+      let emailQuery = {};
+      if (targetDepartments && targetDepartments.length > 0) {
+        emailQuery = { departmentId: { $in: targetDepartments } };
+      }
+      
+      const usersToNotify = await User.find(emailQuery).select('email');
+      const emails = usersToNotify.map(u => u.email).filter(Boolean);
+
+      // Varsa dosyaları mail eki için hazırla
+      let emailAttachments = [];
+      if (attachments && attachments.length > 0) {
+        try {
+          emailAttachments = attachments.map(f => ({
+            filename: f.originalName,
+            content: fs.readFileSync(path.join(__dirname, '..', 'uploads', f.filename))
+          }));
+        } catch (err) {
+          console.error("Ekler okunamadı:", err.message);
+        }
+      }
+
+      if (emails.length > 0) {
+        // Postacıyı (Resend) çağır
+        await sendEmail({
+          email: emails, // array of emails
+          subject: `📢 Yeni Duyuru: ${title}`,
+          message: `İTÜ Racing Portalında yeni bir duyuru yayınlandı:\n\nBaşlık: ${title}\nDetay: ${content}\n\nLütfen portala giriş yaparak detayları kontrol ediniz.\n${process.env.FRONTEND_URL}`,
+          attachments: emailAttachments
+        });
+      }
+    } catch (emailErr) {
+      console.error('Duyuru maili gönderilirken hata oluştu:', emailErr.message);
+    }
+
     res.status(201).json({ message: 'Duyuru başarıyla oluşturuldu.', announcement });
   } catch (error) {
     res.status(500).json({ message: 'Duyuru oluşturulamadı.', error: error.message });
@@ -69,6 +123,44 @@ exports.updateAnnouncement = async (req, res) => {
     if (targetDepartments !== undefined) announcement.targetDepartments = targetDepartments;
 
     await announcement.save();
+
+    // E-posta Bildirimi Gönderme (Güncelleme)
+    try {
+      let emailQuery = {};
+      const updatedTargets = targetDepartments !== undefined ? targetDepartments : announcement.targetDepartments;
+      if (updatedTargets && updatedTargets.length > 0) {
+        emailQuery = { departmentId: { $in: updatedTargets } };
+      }
+      
+      const usersToNotify = await User.find(emailQuery).select('email');
+      const emails = usersToNotify.map(u => u.email).filter(Boolean);
+
+      // Duyurunun mevcut eklerini mail eki için hazırla
+      let emailAttachments = [];
+      if (announcement.attachments && announcement.attachments.length > 0) {
+        try {
+          emailAttachments = announcement.attachments.map(f => ({
+            filename: f.originalName,
+            content: fs.readFileSync(path.join(__dirname, '..', 'uploads', f.filename))
+          }));
+        } catch (err) {
+          console.error("Ekler okunamadı:", err.message);
+        }
+      }
+
+      if (emails.length > 0) {
+        // Postacıyı (Resend) çağır
+        await sendEmail({
+          email: emails, // array of emails
+          subject: `📢 Duyuru Güncellendi: ${title || announcement.title}`,
+          message: `İTÜ Racing Portalındaki bir duyuru GÜNCELLENDİ:\n\nBaşlık: ${title || announcement.title}\nDetay: ${content || announcement.content}\n\nLütfen portala giriş yaparak güncel detayları kontrol ediniz.\n${process.env.FRONTEND_URL}`,
+          attachments: emailAttachments
+        });
+      }
+    } catch (emailErr) {
+      console.error('Duyuru güncelleme maili gönderilirken hata oluştu:', emailErr.message);
+    }
+
     res.status(200).json({ message: 'Duyuru güncellendi.', announcement });
   } catch (error) {
     res.status(500).json({ message: 'Duyuru güncellenemedi.' });

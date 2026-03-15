@@ -121,7 +121,7 @@ exports.assignMember = async (req, res) => {
     const dept = await Department.findById(departmentId);
     if (!dept) return res.status(404).json({ message: 'Departman bulunamadı.' });
 
-    const user = await User.findByIdAndUpdate(userId, { departmentId }, { new: true }).select('-password');
+    const user = await User.findByIdAndUpdate(userId, { departmentId }, { returnDocument: 'after' }).select('-password');
     if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
     res.status(200).json({ message: 'Üye atandı.', user });
   } catch (error) {

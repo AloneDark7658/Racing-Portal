@@ -147,9 +147,9 @@ const AdminAttendanceLog = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-2 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <Link to="/dashboard" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-8 transition-colors text-sm font-medium">
-          <ArrowLeft size={18} /> Dashboard'a Dön
+      <div className="max-w-6xl mx-auto">
+        <Link to="/attendance-hub" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-8 transition-colors text-sm font-medium">
+          <ArrowLeft size={20} /> Geri Dön
         </Link>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -331,8 +331,8 @@ const AdminAttendanceLog = () => {
              <div className="bg-[#141414] border border-white/10 p-8 rounded-3xl w-full max-w-4xl relative shadow-[0_0_50px_rgba(0,0,0,0.5)]">
                 <button onClick={() => setSelectedUser(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"><X /></button>
                 <h2 className="text-2xl font-black mb-8 italic uppercase tracking-tighter">PERFORMANS: <span className="text-red-600">{selectedUser}</span></h2>
-                <div className="h-[350px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[350px] w-full" style={{ position: 'relative', minHeight: '350px' }}>
+                  <ResponsiveContainer width="100%" height={350}>
                     <LineChart data={graphData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
                       <XAxis dataKey="date" stroke="#444" fontSize={10} tickMargin={10} />

@@ -63,9 +63,11 @@ exports.login = async (req, res) => {
       message: 'Giriş başarılı! 🏎️',
       token: token,
       user: {
-        id: user._id,
+        id: user._id, // Backward compatibility
+        _id: user._id,
         name: user.name,
-        role: user.role
+        role: user.role,
+        departmentId: user.departmentId
       }
     });
   } catch (error) {

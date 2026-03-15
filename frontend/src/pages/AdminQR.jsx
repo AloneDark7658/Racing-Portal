@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, Loader2, RefreshCcw, Users } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Loader2, RefreshCcw, Users, Smartphone } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 import { API_URL as API } from '../config';
 
@@ -56,15 +57,32 @@ const AdminQR = () => {
   // biz sadece QR token'ın kendisini koda gömeceğiz çünkü DirectScan direkt onu okuyor)
   const qrValue = qrToken; 
 
+  const handleResetMyDevice = () => {
+    localStorage.removeItem('deviceId');
+    toast.success('Bu telefon/bilgisayar artık yeni bir cihaz olarak tanınacak.', {
+      icon: '📱'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col items-center justify-center p-4">
       
-      <Link to="/dashboard" className="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+      <Link to="/attendance-hub" className="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors flex items-center gap-2">
         <ArrowLeft size={24} /> <span className="font-bold">Panoya Dön</span>
       </Link>
-      <Link to="/admin/manage-devices" className="absolute top-6 right-6 bg-red-600/10 hover:bg-red-600/20 border border-red-600/20 text-red-600 px-4 py-2 rounded-xl transition-all flex items-center gap-2 font-bold text-sm">
-        <Users size={18} /> Cihazları Yönet
-      </Link>      
+      
+      <div className="absolute top-6 right-6 flex items-center gap-3">
+        <button 
+          onClick={handleResetMyDevice} 
+          className="bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 text-gray-300 px-4 py-2 rounded-xl transition-all flex items-center gap-2 font-bold text-sm"
+          title="Bu tarayıcının cihaz kimliğini siler"
+        >
+          <Smartphone size={18} /> Cihazımı Sıfırla
+        </button>  
+        <Link to="/admin/manage-devices" className="bg-red-600/10 hover:bg-red-600/20 border border-red-600/20 text-red-600 px-4 py-2 rounded-xl transition-all flex items-center gap-2 font-bold text-sm">
+          <Users size={18} /> Cihazları Yönet
+        </Link>
+      </div>
       <div className="w-full max-w-2xl bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl flex flex-col items-center relative overflow-hidden">
         
         {/* Dekoratif Arka Plan Işığı */}
