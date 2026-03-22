@@ -35,7 +35,7 @@ exports.protect = async (req, res, next) => {
 // --- 2. ADMİN Mİ KONTROLÜ (Sadece Yöneticiler için) ---
 exports.admin = (req, res, next) => {
   // Yukarıdaki 'protect' adımını geçen kullanıcının rolü admin veya superadmin mi?
-  if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
+  if (req.user && ['admin', 'superadmin'].includes(req.user.role)) {
     // DÜZELTME: Başarılıysa fonksiyonu bitir ve route'a (create) ilerle
     return next(); 
   } else {

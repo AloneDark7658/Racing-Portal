@@ -51,7 +51,7 @@ const AttendanceHub = () => {
             <p className="hidden md:block text-sm text-gray-400 text-center">Performans grafiğini ve devamlılığını incele.</p>
           </Link>
 
-          {(user.role === 'admin' || user.role === 'superadmin') && (
+          {['admin', 'superadmin'].includes(user.role) && (
             <>
               <Link to="/admin/qr-generate" className="bg-white/5 border border-blue-500/30 hover:border-blue-500 hover:bg-blue-500/10 transition-all p-4 md:p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer">
                 <div className="bg-blue-500/20 p-4 rounded-full text-blue-500 group-hover:scale-110 transition-transform">

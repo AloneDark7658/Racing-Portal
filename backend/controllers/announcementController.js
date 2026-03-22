@@ -13,7 +13,7 @@ exports.getAnnouncements = async (req, res) => {
     // Eğer istek atan kişi admin değilse, filtreleme yapıyoruz:
     // Ya "Tüm Takım"a (targetDepartments boş olanlar) atılanları görecek
     // Ya da hedef departmanların içinde kendi departmanı olanları görecek.
-    if (user.role !== 'admin' && user.role !== 'superadmin') {
+    if (!['admin', 'superadmin'].includes(user.role)) {
       query = {
         $or: [
           { targetDepartments: { $exists: true, $size: 0 } }, // Tüm takım

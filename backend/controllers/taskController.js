@@ -33,7 +33,7 @@ exports.getAllTasks = async (req, res) => {
   try {
     let filter = {};
 
-    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    if (!['admin', 'superadmin'].includes(req.user.role)) {
       filter = {
         $or: [
           { assignmentType: 'takim' },

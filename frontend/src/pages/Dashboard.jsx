@@ -84,7 +84,7 @@ const Dashboard = () => {
           });
           setActiveTaskCount(myActiveTasks.length);
 
-          if (parsedUser.role === 'admin' || parsedUser.role === 'superadmin') {
+          if (['admin', 'superadmin'].includes(parsedUser.role)) {
             await fetchAdminStats(token);
           }
         } catch (err) {
@@ -124,7 +124,7 @@ const Dashboard = () => {
               <div className="hidden md:flex flex-col items-end">
                 <span className="text-sm font-semibold">{user.name}</span>
                 <span className="text-xs text-gray-400 flex items-center gap-1">
-                  {user.role === 'admin' || user.role === 'superadmin' ? (
+                  {['admin', 'superadmin'].includes(user.role) ? (
                     <><ShieldAlert size={12} className="text-red-500" /> Yönetici Paneli</>
                   ) : (
                     <><User size={12} /> Üye Paneli</>
@@ -191,7 +191,7 @@ const Dashboard = () => {
         </div>
 
         {/* YÖNETİCİ ÖZET KARTLARI */}
-        {(user.role === 'admin' || user.role === 'superadmin') && (
+        {['admin', 'superadmin'].includes(user.role) && (
           loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               <div className="h-[104px] w-full bg-white/5 rounded-2xl border border-white/10 animate-pulse"></div>
@@ -241,7 +241,7 @@ const Dashboard = () => {
             <p className="hidden md:block text-sm text-gray-400 text-center">İzin talepleri ve yönetimi.</p>
           </Link>
 
-          {(user.role === 'admin' || user.role === 'superadmin') && (
+          {['admin', 'superadmin'].includes(user.role) && (
             <Link to="/admin/announcements" className="bg-white/5 border border-pink-500/30 hover:border-pink-500 hover:bg-pink-500/10 transition-all p-4 md:p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer">
               <div className="bg-pink-500/20 p-4 rounded-full text-pink-500 group-hover:scale-110 transition-transform">
                 <Megaphone size={32} />
@@ -251,7 +251,7 @@ const Dashboard = () => {
             </Link>
           )}
 
-          {(user.role === 'admin' || user.role === 'superadmin') && (
+          {['admin', 'superadmin'].includes(user.role) && (
             <Link to="/admin/departments" className="bg-white/5 border border-purple-500/30 hover:border-purple-500 hover:bg-purple-500/10 transition-all p-4 md:p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer">
               <div className="bg-purple-500/20 p-4 rounded-full text-purple-500 group-hover:scale-110 transition-transform">
                 <Building2 size={32} />

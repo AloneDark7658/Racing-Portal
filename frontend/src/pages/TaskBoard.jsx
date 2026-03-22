@@ -46,7 +46,7 @@ const TaskBoard = () => {
 
   const token = localStorage.getItem('token');
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
+  const isAdmin = ['admin', 'superadmin'].includes(currentUser.role);
 
   const fetchAll = async () => {
     try {

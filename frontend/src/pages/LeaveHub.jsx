@@ -43,7 +43,7 @@ const LeaveHub = () => {
             <p className="hidden md:block text-sm text-gray-400 text-center">Antrenmanlara katılamayacaksan bildir.</p>
           </Link>
 
-          {(user.role === 'admin' || user.role === 'superadmin') && (
+          {['admin', 'superadmin'].includes(user.role) && (
             <Link to="/admin/leaves" className="bg-white/5 border border-yellow-500/30 hover:border-yellow-500 hover:bg-yellow-500/10 transition-all p-4 md:p-6 rounded-xl flex flex-col items-center justify-center gap-3 group cursor-pointer">
               <div className="bg-yellow-500/20 p-4 rounded-full text-yellow-500 group-hover:scale-110 transition-transform">
                 <ClipboardList size={32} />
