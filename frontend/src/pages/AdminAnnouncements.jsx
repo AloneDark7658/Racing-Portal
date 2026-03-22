@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import useFormDraft from '../hooks/useFormDraft';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Megaphone, Plus, Trash2, Loader2, Send, Clock, Paperclip, FileText, Download } from 'lucide-react';
+import { ArrowLeft, Megaphone, Plus, Trash2, Edit2, Loader2, Send, Clock, Paperclip, FileText, Download } from 'lucide-react';
 
 import { API_URL as API } from '../config';
 const BACKEND_URL = API.replace('/api', '');
@@ -13,6 +13,7 @@ const AdminAnnouncements = () => {
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [files, setFiles] = useState([]);
   
   // FAZ 2: Form taslak (draft) desteği — sayfa yenilendiğinde veri kaybolmaz
@@ -60,21 +61,33 @@ const AdminAnnouncements = () => {
     e.preventDefault();
     setSubmitLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('title', form.title);
-      formData.append('content', form.content);
-      formData.append('targetDepartments', JSON.stringify(form.targetDepartments));
-      files.forEach(f => formData.append('files', f));
+      if (editingId) {
+        await axios.put(`${API}/announcements/${editingId}`, {
+          title: form.title,
+          content: form.content,
+          targetDepartments: form.targetDepartments
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        const formData = new FormData();
+        formData.append('title', form.title);
+        formData.append('content', form.content);
+        formData.append('targetDepartments', JSON.stringify(form.targetDepartments));
+        files.forEach(f => formData.append('files', f));
 
-      await axios.post(`${API}/announcements`, formData, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
-      });
+        await axios.post(`${API}/announcements`, formData, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+        });
+      }
+      
       setModalOpen(false);
       clearDraft();
       setFiles([]);
+      setEditingId(null);
       fetchData();
     } catch (error) {
-      alert('Duyuru oluşturulamadı.');
+      alert(editingId ? 'Duyuru güncellenemedi.' : 'Duyuru oluşturulamadı.');
     } finally {
       setSubmitLoading(false);
     }
@@ -111,7 +124,7 @@ const AdminAnnouncements = () => {
               <p className="text-sm text-gray-400">Takıma veya spesifik departmanlara duyuru gönderin.</p>
             </div>
           </div>
-          <button onClick={() => setModalOpen(true)} className="hidden md:flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl font-bold text-sm">
+          <button onClick={() => { setEditingId(null); clearDraft(); setFiles([]); setModalOpen(true); }} className="hidden md:flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl font-bold text-sm">
             <Plus size={18} /> Yeni Duyuru
           </button>
         </div>
@@ -172,9 +185,27 @@ const AdminAnnouncements = () => {
                     </div>
                   )}
                 </div>
-                <button onClick={() => handleDelete(ann._id)} className="text-gray-500 hover:text-red-500 self-start p-2 bg-black/20 rounded-lg">
-                  <Trash2 size={20} />
-                </button>
+                <div className="flex gap-2 self-start flex-col sm:flex-row">
+                  <button 
+                    onClick={() => {
+                      setEditingId(ann._id);
+                      setForm({
+                        title: ann.title,
+                        content: ann.content,
+                        targetDepartments: ann.targetDepartments.map(d => d._id)
+                      });
+                      setFiles([]);
+                      setModalOpen(true);
+                    }} 
+                    className="text-gray-500 hover:text-blue-500 p-2 bg-black/20 rounded-lg transition-colors"
+                    title="Düzenle"
+                  >
+                    <Edit2 size={20} />
+                  </button>
+                  <button onClick={() => handleDelete(ann._id)} className="text-gray-500 hover:text-red-500 p-2 bg-black/20 rounded-lg transition-colors" title="Sil">
+                    <Trash2 size={20} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -184,7 +215,7 @@ const AdminAnnouncements = () => {
         {modalOpen && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-lg shadow-xl p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Megaphone className="text-red-500"/> Yeni Duyuru</h2>
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Megaphone className="text-red-500"/> {editingId ? 'Duyuruyu Düzenle' : 'Yeni Duyuru'}</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Başlık</label>
@@ -222,9 +253,9 @@ const AdminAnnouncements = () => {
                   )}
                 </div>
                 <div className="flex gap-2 pt-4">
-                  <button type="button" onClick={() => { setModalOpen(false); clearDraft(); }} className="flex-1 py-3 border border-white/20 rounded-xl hover:bg-white/5 font-bold">İptal</button>
+                  <button type="button" onClick={() => { setModalOpen(false); clearDraft(); setEditingId(null); }} className="flex-1 py-3 border border-white/20 rounded-xl hover:bg-white/5 font-bold">İptal</button>
                   <button type="submit" disabled={submitLoading} className="flex-1 bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                    {submitLoading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />} Gönder
+                    {submitLoading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />} {editingId ? 'Güncelle' : 'Gönder'}
                   </button>
                 </div>
               </form>
@@ -235,7 +266,7 @@ const AdminAnnouncements = () => {
 
       {/* MOBIL FAB (Yeni Duyuru) */}
       <button 
-        onClick={() => setModalOpen(true)}
+        onClick={() => { setEditingId(null); clearDraft(); setFiles([]); setModalOpen(true); }}
         className="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform active:scale-95"
       >
         <Plus size={24} />
