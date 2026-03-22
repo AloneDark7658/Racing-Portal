@@ -1,17 +1,42 @@
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 
+const AttendanceSession = require('../models/AttendanceSession');
+const Leave = require('../models/LeaveRequest');
+
+// --- YARDIMCI: Tarihleri UTC ile YYYY-MM-DD olarak eşleştirir ---
+const formatDate = (date) => {
+  if (!date) return null;
+  const d = new Date(date);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+};
+
+// --- YARDIMCI: JS getDay() (0=Pazar) formatını bizim formata (0=Pazartesi, 6=Pazar) çevirir ---
+const getLocalDayIndex = (date) => {
+  const jsDay = new Date(date).getDay();
+  return jsDay === 0 ? 6 : jsDay - 1;
+};
+
+// --- YARDIMCI: Date-keyed Map (O(1) lookup) ---
+const buildDateMap = (records, dateField = 'date') => {
+  const map = new Map();
+  records.forEach(r => {
+    const key = formatDate(r[dateField]);
+    if (key) map.set(key, r);
+  });
+  return map;
+};
+
 // --- ADMİN DASHBOARD İSTATİSTİKLERİNİ GETİRME (N+1 OPTİMİZE - FAZ 2) ---
 exports.getDashboardStats = async (req, res) => {
   try {
-    // 1. Sistemdeki sadece normal 'member' (üye) rolündeki kullanıcıları bulalım
-    const members = await User.find({ role: 'member' }).select('-password').lean();
+    const sessions = await AttendanceSession.find().sort({ date: 1 }).lean();
+    const members = await User.find({ role: 'member' }).select('-password').populate('departmentId', 'name workSchedule').lean();
     
-    // 2. TÜM yoklama kayıtlarını TEK SORGUDA çek (N+1 yerine 1 sorgu)
     const memberIds = members.map(m => m._id);
     const allRecords = await Attendance.find({ userId: { $in: memberIds } }).lean();
+    const allLeaves = await Leave.find({ userId: { $in: memberIds }, status: 'Onaylandı' }).lean();
 
-    // 3. Hafızada kullanıcı bazlı grupla
     const recordsByUser = {};
     allRecords.forEach(record => {
       const uid = record.userId.toString();
@@ -19,23 +44,43 @@ exports.getDashboardStats = async (req, res) => {
       recordsByUser[uid].push(record);
     });
 
-    // 4. Her üye için hesaplama yap (DB sorgusu SIFIR)
-    const teamStats = members.map(member => {
-      const records = recordsByUser[member._id.toString()] || [];
-      
-      let totalDelay = 0;
-      let presentCount = 0;
-      let absentCount = 0;
-      let leaveCount = 0;
+    const leavesByUser = {};
+    allLeaves.forEach(l => {
+      const uid = l.userId.toString();
+      if (!leavesByUser[uid]) leavesByUser[uid] = [];
+      leavesByUser[uid].push(l);
+    });
 
-      records.forEach(record => {
-        if (record.status === 'Geldi') {
-          presentCount++;
-          totalDelay += record.delayMinutes;
-        } else if (record.status === 'İzinsiz Yok') {
-          absentCount++;
-        } else if (record.status === 'İzinli Yok') {
-          leaveCount++;
+    const teamStats = members.map(member => {
+      const userRecords = recordsByUser[member._id.toString()] || [];
+      const userLeaves = leavesByUser[member._id.toString()] || [];
+
+      const attMap = buildDateMap(userRecords, 'date');
+      const leaveMap = buildDateMap(userLeaves, 'requestedDate');
+
+      let presentDays = 0, absentDays = 0, leaveDays = 0, totalDelayMinutes = 0;
+
+      const userDeptId = member.departmentId ? member.departmentId._id.toString() : null;
+
+      sessions.forEach(session => {
+        const mandatoryIds = session.mandatoryDepartments ? session.mandatoryDepartments.map(id => id.toString()) : [];
+        const isMandatory = userDeptId && mandatoryIds.includes(userDeptId);
+
+        if (isMandatory) {
+          const sDate = formatDate(session.date);
+          const att = attMap.get(sDate);
+          
+          if (att) {
+            if (att.status === 'İzinli Yok') leaveDays++;
+            else {
+              presentDays++;
+              if (att.delayMinutes) totalDelayMinutes += att.delayMinutes;
+            }
+          } else {
+            const isOnLeave = leaveMap.get(sDate);
+            if (isOnLeave) leaveDays++;
+            else absentDays++;
+          }
         }
       });
 
@@ -43,18 +88,18 @@ exports.getDashboardStats = async (req, res) => {
         user: { 
           id: member._id, 
           name: member.name, 
-          studentId: member.studentId 
+          studentId: member.studentId,
+          department: member.departmentId ? member.departmentId.name : ''
         },
         stats: {
-          presentDays: presentCount,
-          absentDays: absentCount,
-          leaveDays: leaveCount,
-          totalDelayMinutes: totalDelay
+          presentDays,
+          absentDays,
+          leaveDays,
+          totalDelayMinutes
         }
       };
     });
 
-    // 5. Tüm takımın verisini Admin'e gönder
     res.status(200).json({
       message: 'Takım istatistikleri başarıyla hesaplandı! 📊',
       data: teamStats

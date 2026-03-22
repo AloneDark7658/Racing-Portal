@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const Attendance = require('../models/Attendance');
 const AttendanceSession = require('../models/AttendanceSession'); 
 const User = require('../models/User');
+const Department = require('../models/Department');
 const Leave = require('../models/LeaveRequest');
 
 // --- YARDIMCI: Tarihleri UTC ile YYYY-MM-DD olarak eşleştirir ---
@@ -10,6 +11,12 @@ const formatDate = (date) => {
   if (!date) return null;
   const d = new Date(date);
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+};
+
+// --- YARDIMCI: JS getDay() (0=Pazar) formatını bizim formata (0=Pazartesi, 6=Pazar) çevirir ---
+const getLocalDayIndex = (date) => {
+  const jsDay = new Date(date).getDay();
+  return jsDay === 0 ? 6 : jsDay - 1;
 };
 
 // --- YARDIMCI: Attendance array'ini date-keyed Map'e dönüştürür (O(1) lookup) ---
@@ -40,14 +47,40 @@ exports.getActiveSession = async (req, res) => {
 // 2. YENİ QR ÜRET VEYA MEVCUDU VER (Admin için)
 exports.generateQR = async (req, res) => {
   try {
-    const { startTime } = req.body;
+    const { startTime, exemptDepartments = [], extraDepartments = [] } = req.body;
     const todayStr = formatDate(new Date());
     const todayDate = new Date(todayStr);
+
+    const localDay = getLocalDayIndex(todayDate);
+    const allDepartments = await Department.find().lean();
+    
+    // Compute mandatoryDepartments
+    const mandatorySet = new Set();
+    
+    allDepartments.forEach(dept => {
+      const isNormallyWorking = dept.workSchedule && dept.workSchedule.daysOfWeek && dept.workSchedule.daysOfWeek.includes(localDay);
+      const deptIdStr = dept._id.toString();
+      
+      const isExempt = exemptDepartments.some(id => id.toString() === deptIdStr);
+      const isExtra = extraDepartments.some(id => id.toString() === deptIdStr);
+
+      if ((isNormallyWorking && !isExempt) || isExtra) {
+        mandatorySet.add(deptIdStr);
+      }
+    });
+    
+    const mandatoryDepartments = Array.from(mandatorySet);
 
     let session = await AttendanceSession.findOne({ date: todayDate });
 
     if (session) {
-      return res.status(200).json({ qrData: session.qrData, startTime: session.startTime, message: 'Mevcut oturum getirildi.' });
+      if (req.body.exemptDepartments || req.body.extraDepartments) {
+        session.exemptDepartments = exemptDepartments;
+        session.extraDepartments = extraDepartments;
+        session.mandatoryDepartments = mandatoryDepartments;
+        await session.save();
+      }
+      return res.status(200).json({ qrData: session.qrData, startTime: session.startTime, message: 'Mevcut oturum getirildi ve güncellendi.' });
     }
 
     const qrPayload = {
@@ -63,7 +96,10 @@ exports.generateQR = async (req, res) => {
       date: todayDate,
       startTime: qrPayload.startTime,
       qrData: qrData,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      exemptDepartments: exemptDepartments,
+      extraDepartments: extraDepartments,
+      mandatoryDepartments: mandatoryDepartments
     });
 
     await session.save();
@@ -165,10 +201,36 @@ exports.scanQR = async (req, res) => {
 exports.getTodayAttendance = async (req, res) => {
   try {
     const todayStr = formatDate(new Date());
-    const attendances = await Attendance.find({ date: new Date(todayStr) })
-      .populate('userId', 'name') 
-      .sort({ scanTime: -1 });
-    res.status(200).json(attendances);
+    const todayDate = new Date(todayStr);
+
+    const session = await AttendanceSession.findOne({ date: todayDate }).lean();
+    if (!session) return res.status(200).json([]);
+
+    const localDay = getLocalDayIndex(session.date);
+    const exemptIds = session.exemptDepartments ? session.exemptDepartments.map(id => id.toString()) : [];
+
+    const attendances = await Attendance.find({ date: todayDate })
+      .populate({
+        path: 'userId',
+        select: 'name departmentId',
+        populate: { path: 'departmentId', select: 'name workSchedule' }
+      })
+      .sort({ scanTime: -1 })
+      .lean();
+
+    const mandatoryIds = session.mandatoryDepartments ? session.mandatoryDepartments.map(id => id.toString()) : [];
+
+    const filteredAttendances = attendances.filter(att => {
+      const user = att.userId;
+      if (!user) return false;
+      
+      const userDeptId = user.departmentId ? user.departmentId._id.toString() : null;
+      const isMandatory = userDeptId && mandatoryIds.includes(userDeptId);
+
+      return isMandatory;
+    });
+
+    res.status(200).json(filteredAttendances);
   } catch (error) {
     res.status(500).json({ message: 'Canlı liste alınamadı.' });
   }
@@ -177,8 +239,8 @@ exports.getTodayAttendance = async (req, res) => {
 // 5. LİDERLİK TABLOSU ÖZETİ (Admin İçin - Map ile O(1) lookup)
 exports.getAttendanceSummary = async (req, res) => {
   try {
-    const sessions = await AttendanceSession.find().sort({ date: 1 });
-    const users = await User.find().select('name role studentId departmentId').populate('departmentId', 'name');
+    const sessions = await AttendanceSession.find().sort({ date: 1 }).lean();
+    const users = await User.find().select('name role studentId departmentId').populate('departmentId', 'name workSchedule').lean();
     
     // TEK SORGUDA tüm yoklama ve izin kayıtlarını çek
     const allAttendances = await Attendance.find().lean();
@@ -208,24 +270,33 @@ exports.getAttendanceSummary = async (req, res) => {
       const attMap = buildDateMap(userAtts, 'date');
       const leaveMap = buildDateMap(userLeaves, 'requestedDate');
 
-      let green = 0, yellow = 0, red = 0, leave = 0;
+      let green = 0, yellow = 0, red = 0, leave = 0, totalValidSessions = 0;
+
+      const userDeptId = user.departmentId ? user.departmentId._id.toString() : null;
 
       sessions.forEach(session => {
-        const sDate = formatDate(session.date);
-        const att = attMap.get(sDate);
-        
-        if (att) {
-          if (att.status === 'İzinli Yok') leave++;
-          else if (att.colorCode === 'green') green++;
-          else if (att.colorCode === 'yellow' || att.colorCode === 'orange') yellow++;
-          else if (att.colorCode === 'red') red++;
-        } else {
-          const isOnLeave = leaveMap.get(sDate);
-          if (isOnLeave) leave++;
+        const mandatoryIds = session.mandatoryDepartments ? session.mandatoryDepartments.map(id => id.toString()) : [];
+        const isMandatory = userDeptId && mandatoryIds.includes(userDeptId);
+
+        if (isMandatory) {
+          totalValidSessions++;
+
+          const sDate = formatDate(session.date);
+          const att = attMap.get(sDate);
+          
+          if (att) {
+            if (att.status === 'İzinli Yok') leave++;
+            else if (att.colorCode === 'green') green++;
+            else if (att.colorCode === 'yellow' || att.colorCode === 'orange') yellow++;
+            else if (att.colorCode === 'red') red++;
+          } else {
+            const isOnLeave = leaveMap.get(sDate);
+            if (isOnLeave) leave++;
+          }
         }
       });
 
-      let absent = sessions.length - (green + yellow + red + leave);
+      let absent = totalValidSessions - (green + yellow + red + leave);
       return {
         _id: user._id,
         name: user.name,
@@ -235,7 +306,7 @@ exports.getAttendanceSummary = async (req, res) => {
         departmentId: user.departmentId ? user.departmentId._id : '',
         green, yellow, red, leave,
         absent: absent < 0 ? 0 : absent,
-        totalSessions: sessions.length
+        totalSessions: totalValidSessions
       };
     });
 
@@ -247,35 +318,50 @@ exports.getAttendanceSummary = async (req, res) => {
 
 // 6. KİŞİSEL GRAFİK VERİSİ (Ortak Motor — Map ile optimize edildi)
 const generateGraphData = async (userId) => {
-  const [sessions, userAttendances, userLeaves] = await Promise.all([
-    AttendanceSession.find().sort({ date: 1 }),
-    Attendance.find({ userId }),
-    Leave.find({ userId, status: 'Onaylandı' })
+  const [sessions, userAttendances, userLeaves, user] = await Promise.all([
+    AttendanceSession.find().sort({ date: 1 }).lean(),
+    Attendance.find({ userId }).lean(),
+    Leave.find({ userId, status: 'Onaylandı' }).lean(),
+    User.findById(userId).populate('departmentId', 'workSchedule').lean()
   ]);
 
   const attMap = buildDateMap(userAttendances, 'date');
   const leaveMap = buildDateMap(userLeaves, 'requestedDate');
 
-  return sessions.map(session => {
+  const userDeptId = user && user.departmentId ? user.departmentId._id.toString() : null;
+
+  const graphData = [];
+
+  sessions.forEach(session => {
+    const mandatoryIds = session.mandatoryDepartments ? session.mandatoryDepartments.map(id => id.toString()) : [];
+    const isMandatory = userDeptId && mandatoryIds.includes(userDeptId);
+
     const sDate = formatDate(session.date);
-    const record = attMap.get(sDate);
-    const isOnLeave = leaveMap.get(sDate);
 
-    let score = 0, status = 'Devamsız', delay = 0;
+    if (isMandatory) {
+      const record = attMap.get(sDate);
+      const isOnLeave = leaveMap.get(sDate);
 
-    if (record) {
-      delay = record.delayMinutes;
-      if (record.status === 'İzinli Yok') { score = 0; status = 'İzinli'; }
-      else if (record.colorCode === 'green') { score = 3; status = 'Zamanında'; }
-      else if (record.colorCode === 'yellow' || record.colorCode === 'orange') { score = 2; status = 'Gecikmeli'; }
-      else if (record.colorCode === 'red') { score = 1; status = 'Çok Geç'; }
-    } else if (isOnLeave) {
-      score = 0; 
-      status = 'İzinli'; 
+      let score = 0, status = 'Devamsız', delay = 0;
+
+      if (record) {
+        delay = record.delayMinutes;
+        if (record.status === 'İzinli Yok') { score = 0; status = 'İzinli'; }
+        else if (record.colorCode === 'green') { score = 3; status = 'Zamanında'; }
+        else if (record.colorCode === 'yellow' || record.colorCode === 'orange') { score = 2; status = 'Gecikmeli'; }
+        else if (record.colorCode === 'red') { score = 1; status = 'Çok Geç'; }
+      } else if (isOnLeave) {
+        score = 0; 
+        status = 'İzinli'; 
+      }
+
+      graphData.push({ date: sDate, score, status, delay });
+    } else {
+      graphData.push({ date: sDate, score: 0, status: 'Mesai Yok', delay: 0 });
     }
-
-    return { date: sDate, score, status, delay };
   });
+
+  return graphData;
 };
 
 exports.getUserAttendanceGraph = async (req, res) => {
@@ -296,37 +382,47 @@ exports.getMyGraph = async (req, res) => {
 exports.getMySummary = async (req, res) => {
   try {
     const userId = req.user._id;
-    const [sessions, userAtts, userLeaves] = await Promise.all([
-      AttendanceSession.find().sort({ date: 1 }),
-      Attendance.find({ userId }),
-      Leave.find({ userId, status: 'Onaylandı' })
+    const [sessions, userAtts, userLeaves, user] = await Promise.all([
+      AttendanceSession.find().sort({ date: 1 }).lean(),
+      Attendance.find({ userId }).lean(),
+      Leave.find({ userId, status: 'Onaylandı' }).lean(),
+      User.findById(userId).populate('departmentId', 'workSchedule').lean()
     ]);
 
     const attMap = buildDateMap(userAtts, 'date');
     const leaveMap = buildDateMap(userLeaves, 'requestedDate');
 
-    let green = 0, yellow = 0, red = 0, leave = 0;
+    let green = 0, yellow = 0, red = 0, leave = 0, totalValidSessions = 0;
+
+    const userDeptId = user && user.departmentId ? user.departmentId._id.toString() : null;
 
     sessions.forEach(session => {
-      const sDate = formatDate(session.date);
-      const att = attMap.get(sDate);
-      const isOnLeave = leaveMap.get(sDate);
+      const mandatoryIds = session.mandatoryDepartments ? session.mandatoryDepartments.map(id => id.toString()) : [];
+      const isMandatory = userDeptId && mandatoryIds.includes(userDeptId);
 
-      if (att) {
-        if (att.status === 'İzinli Yok') leave++;
-        else if (att.colorCode === 'green') green++;
-        else if (att.colorCode === 'yellow' || att.colorCode === 'orange') yellow++;
-        else if (att.colorCode === 'red') red++;
-      } else if (isOnLeave) {
-        leave++;
+      if (isMandatory) {
+        totalValidSessions++;
+
+        const sDate = formatDate(session.date);
+        const att = attMap.get(sDate);
+        const isOnLeave = leaveMap.get(sDate);
+
+        if (att) {
+          if (att.status === 'İzinli Yok') leave++;
+          else if (att.colorCode === 'green') green++;
+          else if (att.colorCode === 'yellow' || att.colorCode === 'orange') yellow++;
+          else if (att.colorCode === 'red') red++;
+        } else if (isOnLeave) {
+          leave++;
+        }
       }
     });
 
-    let absent = sessions.length - (green + yellow + red + leave);
+    let absent = totalValidSessions - (green + yellow + red + leave);
     res.status(200).json({ 
       green, yellow, red, leave, 
       absent: absent < 0 ? 0 : absent, 
-      totalSessions: sessions.length 
+      totalSessions: totalValidSessions 
     });
   } catch (error) {
     res.status(500).json({ message: 'Kişisel özet hatası.' });

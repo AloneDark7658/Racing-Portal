@@ -1,8 +1,8 @@
 const Department = require('../models/Department');
 const User = require('../models/User');
 
-// Gün isimleri (0=Pazar, 1=Pazartesi, ...)
-const DAY_NAMES = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+// Gün isimleri (0=Pazartesi, 1=Salı, ...)
+const DAY_NAMES = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 
 // --- TÜM DEPARTMANLARI GETİR (düz liste, üye sayısı ile) ---
 exports.getAll = async (req, res) => {

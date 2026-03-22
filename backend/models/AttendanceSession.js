@@ -8,7 +8,10 @@ const attendanceSessionSchema = new mongoose.Schema({
   },
   startTime: { type: String, required: true },
   qrData: { type: String, required: true },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  exemptDepartments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Department' }],
+  extraDepartments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Department' }],
+  mandatoryDepartments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Department' }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('AttendanceSession', attendanceSessionSchema);

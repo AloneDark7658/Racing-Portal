@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 
 const workScheduleSchema = new mongoose.Schema({
-  // Çalışma günleri: 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
+  // Çalışma günleri: 0=Pazartesi, 1=Salı, ..., 6=Pazar
   daysOfWeek: { 
     type: [Number], 
     required: true,
     validate: {
       validator: (v) => Array.isArray(v) && v.every(d => d >= 0 && d <= 6),
-      message: 'Her gün 0-6 arasında olmalı (0=Pazar, 6=Cumartesi)'
+      message: 'Her gün 0-6 arasında olmalı (0=Pazartesi, 6=Pazar)'
     }
   },
   startTime: { type: String, required: true }, // Örn: "18:00"
