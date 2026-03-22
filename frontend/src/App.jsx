@@ -21,6 +21,7 @@ import BottomNav from './components/BottomNav';
 import AttendanceHub from './pages/AttendanceHub';
 import LeaveHub from './pages/LeaveHub';
 import TaskBoard from './pages/TaskBoard';
+import FeedbackModal from './components/FeedbackModal';
 
 // --- YARDIMCI: JWT token'dan payload'u decode et (kütüphane gerektirmez) ---
 const decodeToken = (token) => {
@@ -109,6 +110,7 @@ const AppContent = () => {
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
       {!isAuthPage && <BottomNav />}
+      {!isAuthPage && <FeedbackModal />}
     </div>
   );
 };

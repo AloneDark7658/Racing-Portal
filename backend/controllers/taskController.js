@@ -96,8 +96,12 @@ exports.createTask = async (req, res) => {
       }
 
       if (emailQuery) {
-        const usersToNotify = await User.find(emailQuery).select('email');
-        const emails = usersToNotify.map(u => u.email).filter(Boolean);
+        let finalQuery = emailQuery;
+        if (Object.keys(emailQuery).length > 0) {
+          finalQuery = { $or: [emailQuery, { role: { $in: ['admin', 'superadmin'] } }] };
+        }
+        const usersToNotify = await User.find(finalQuery).select('email');
+        const emails = [...new Set(usersToNotify.map(u => u.email).filter(Boolean))];
 
         if (emails.length > 0) {
           // Dosya ekleri yerine indirme linkleri oluştur
@@ -191,8 +195,12 @@ exports.updateTask = async (req, res) => {
       }
 
       if (emailQuery) {
-        const usersToNotify = await User.find(emailQuery).select('email');
-        const emails = usersToNotify.map(u => u.email).filter(Boolean);
+        let finalQuery = emailQuery;
+        if (Object.keys(emailQuery).length > 0) {
+          finalQuery = { $or: [emailQuery, { role: { $in: ['admin', 'superadmin'] } }] };
+        }
+        const usersToNotify = await User.find(finalQuery).select('email');
+        const emails = [...new Set(usersToNotify.map(u => u.email).filter(Boolean))];
 
         // Dosya ekleri yerine indirme linkleri oluştur
         let attachmentInfo = '';

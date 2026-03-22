@@ -71,9 +71,13 @@ exports.createAnnouncement = async (req, res) => {
       if (targetDepartments && targetDepartments.length > 0) {
         emailQuery = { departmentId: { $in: targetDepartments } };
       }
+      let finalQuery = emailQuery;
+      if (Object.keys(emailQuery).length > 0) {
+        finalQuery = { $or: [emailQuery, { role: { $in: ['admin', 'superadmin'] } }] };
+      }
       
-      const usersToNotify = await User.find(emailQuery).select('email');
-      const emails = usersToNotify.map(u => u.email).filter(Boolean);
+      const usersToNotify = await User.find(finalQuery).select('email');
+      const emails = [...new Set(usersToNotify.map(u => u.email).filter(Boolean))];
 
       // Varsa dosyaları mail eki için hazırla
       let emailAttachments = [];
@@ -131,9 +135,13 @@ exports.updateAnnouncement = async (req, res) => {
       if (updatedTargets && updatedTargets.length > 0) {
         emailQuery = { departmentId: { $in: updatedTargets } };
       }
+      let finalQuery = emailQuery;
+      if (Object.keys(emailQuery).length > 0) {
+        finalQuery = { $or: [emailQuery, { role: { $in: ['admin', 'superadmin'] } }] };
+      }
       
-      const usersToNotify = await User.find(emailQuery).select('email');
-      const emails = usersToNotify.map(u => u.email).filter(Boolean);
+      const usersToNotify = await User.find(finalQuery).select('email');
+      const emails = [...new Set(usersToNotify.map(u => u.email).filter(Boolean))];
 
       // Duyurunun mevcut eklerini mail eki için hazırla
       let emailAttachments = [];

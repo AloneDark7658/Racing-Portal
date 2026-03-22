@@ -56,6 +56,7 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/departments', require('./routes/departmentRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
+app.use('/api/feedback', require('./routes/feedbackRoutes'));
 
 // --- Test Rotası ---
 app.get('/', (req, res) => {
