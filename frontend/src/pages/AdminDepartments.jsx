@@ -302,7 +302,16 @@ const AdminDepartments = () => {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-[10px] text-gray-500 italic">Kendiniz</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${
+                            user.role === 'superadmin' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/30' :
+                            user.role === 'admin' ? 'bg-red-500/10 text-red-500 border border-red-500/30' :
+                            'bg-blue-500/10 text-blue-500 border border-blue-500/30'
+                          }`}>
+                            {user.role === 'superadmin' ? 'S.Admin' : user.role === 'admin' ? 'Admin' : 'Üye'}
+                          </span>
+                          <span className="text-[10px] text-gray-500 italic">Kendiniz</span>
+                        </div>
                       )}
                     </div>
                   );
