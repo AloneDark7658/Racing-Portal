@@ -9,20 +9,37 @@ const populateTask = (query) => query
   .populate('assignedDepartments', 'name')
   .populate('createdBy', 'name');
 
+// --- YARDIMCI: Dosya indirme linklerini oluştur ---
+const buildDownloadLinks = (attachments) => {
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+  return attachments.map(f => `- ${f.originalName}: ${backendUrl}/uploads/${f.filename}`).join('\n');
+};
+
+// --- YARDIMCI: Dosyaları diskten sil ---
+const deleteAttachmentFiles = (attachments) => {
+  if (!attachments || attachments.length === 0) return;
+  attachments.forEach(f => {
+    const filePath = path.join(__dirname, '..', 'uploads', f.filename);
+    fs.unlink(filePath, (err) => {
+      if (err && err.code !== 'ENOENT') {
+        console.error(`Dosya silinemedi: ${filePath}`, err.message);
+      }
+    });
+  });
+};
+
 // Tüm görevleri getir (admin: hepsi, üye: sadece kendine atananlar)
 exports.getAllTasks = async (req, res) => {
   try {
     let filter = {};
 
-    // Admin/Superadmin tüm görevleri görür
-    // Normal üyeler sadece kendileriyle ilgili görevleri görür
     if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
       filter = {
         $or: [
-          { assignmentType: 'takim' },                          // Tüm takıma atanan
-          { assignmentType: 'kisi', assignedUsers: req.user._id },  // Kendisine atanan
+          { assignmentType: 'takim' },
+          { assignmentType: 'kisi', assignedUsers: req.user._id },
           ...(req.user.departmentId
-            ? [{ assignmentType: 'ekip', assignedDepartments: req.user.departmentId }]  // Departmanına atanan
+            ? [{ assignmentType: 'ekip', assignedDepartments: req.user.departmentId }]
             : [])
         ]
       };
@@ -39,7 +56,6 @@ exports.getAllTasks = async (req, res) => {
 exports.createTask = async (req, res) => {
   try {
     const { title, description, assignmentType, deadline, priority } = req.body;
-    // FormData ile gelince array'ler string olabiliyor
     let assignedUsers = req.body.assignedUsers || [];
     let assignedDepartments = req.body.assignedDepartments || [];
     if (typeof assignedUsers === 'string') { try { assignedUsers = JSON.parse(assignedUsers); } catch { assignedUsers = []; } }
@@ -68,11 +84,11 @@ exports.createTask = async (req, res) => {
     });
     const populated = await populateTask(Task.findById(task._id));
 
-    // E-Posta Bildirimi Gönderme
+    // E-Posta Bildirimi Gönderme (indirme linkleri ile)
     try {
       let emailQuery = null;
       if (assignmentType === 'takim') {
-        emailQuery = {}; // Tüm kullanıcılar
+        emailQuery = {};
       } else if (assignmentType === 'ekip' && assignedDepartments.length > 0) {
         emailQuery = { departmentId: { $in: assignedDepartments } };
       } else if (assignmentType === 'kisi' && assignedUsers.length > 0) {
@@ -84,24 +100,17 @@ exports.createTask = async (req, res) => {
         const emails = usersToNotify.map(u => u.email).filter(Boolean);
 
         if (emails.length > 0) {
-          // Varsa dosyaları mail eki için hazırla
-          let emailAttachments = [];
+          // Dosya ekleri yerine indirme linkleri oluştur
+          let attachmentInfo = '';
           if (attachments && attachments.length > 0) {
-            try {
-              emailAttachments = attachments.map(f => ({
-                filename: f.originalName,
-                content: fs.readFileSync(path.join(__dirname, '..', 'uploads', f.filename))
-              }));
-            } catch (err) {
-              console.error("Ekler okunamadı:", err.message);
-            }
+            attachmentInfo = `\n\nEk Dosyalar:\n${buildDownloadLinks(attachments)}`;
           }
 
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
           await sendEmail({
              email: emails,
              subject: `📝 Yeni Görev: ${title}`,
-             message: `İTÜ Racing Portalında size veya ekibinize yeni bir görev atandı:\n\nGörev: ${title}\nÖncelik: ${priority || 'Normal'}\nBitiş Tarihi: ${deadline ? new Date(deadline).toLocaleDateString('tr-TR') : 'Belirtilmedi'}\n\nDetaylar için portala giriş yapın:\n${process.env.FRONTEND_URL}`,
-             attachments: emailAttachments
+             message: `İTÜ Racing Portalında size veya ekibinize yeni bir görev atandı:\n\nGörev: ${title}\nÖncelik: ${priority || 'Normal'}\nBitiş Tarihi: ${deadline ? new Date(deadline).toLocaleDateString('tr-TR') : 'Belirtilmedi'}${attachmentInfo}\n\nDetaylar için portala giriş yapın:\n${frontendUrl}`
           });
         }
       }
@@ -170,11 +179,11 @@ exports.updateTask = async (req, res) => {
     );
     if (!task) return res.status(404).json({ message: 'Görev bulunamadı.' });
 
-    // E-Posta Bildirimi Gönderme (Güncelleme)
+    // E-Posta Bildirimi (indirme linkleri ile)
     try {
       let emailQuery = null;
       if (task.assignmentType === 'takim') {
-        emailQuery = {}; // Tüm kullanıcılar
+        emailQuery = {};
       } else if (task.assignmentType === 'ekip' && task.assignedDepartments?.length > 0) {
         emailQuery = { departmentId: { $in: task.assignedDepartments.map(d => d._id) } };
       } else if (task.assignmentType === 'kisi' && task.assignedUsers?.length > 0) {
@@ -185,25 +194,18 @@ exports.updateTask = async (req, res) => {
         const usersToNotify = await User.find(emailQuery).select('email');
         const emails = usersToNotify.map(u => u.email).filter(Boolean);
 
-        // Görevin mevcut eklerini mail eki için hazırla
-        let emailAttachments = [];
+        // Dosya ekleri yerine indirme linkleri oluştur
+        let attachmentInfo = '';
         if (task.attachments && task.attachments.length > 0) {
-          try {
-            emailAttachments = task.attachments.map(f => ({
-              filename: f.originalName,
-              content: fs.readFileSync(path.join(__dirname, '..', 'uploads', f.filename))
-            }));
-          } catch (err) {
-            console.error("Ekler okunamadı:", err.message);
-          }
+          attachmentInfo = `\n\nEk Dosyalar:\n${buildDownloadLinks(task.attachments)}`;
         }
 
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         if (emails.length > 0) {
           await sendEmail({
              email: emails,
              subject: `🔄 Görev Güncellendi: ${task.title}`,
-             message: `İTÜ Racing Portalında size veya ekibinize atanmış bir görev GÜNCELLENDİ:\n\nGörev: ${task.title}\nÖncelik: ${task.priority || 'Normal'}\nBitiş Tarihi: ${task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Belirtilmedi'}\nGüncel Durum: ${task.status}\n\nDetaylar için portala giriş yapın:\n${process.env.FRONTEND_URL}`,
-             attachments: emailAttachments
+             message: `İTÜ Racing Portalında size veya ekibinize atanmış bir görev GÜNCELLENDİ:\n\nGörev: ${task.title}\nÖncelik: ${task.priority || 'Normal'}\nBitiş Tarihi: ${task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Belirtilmedi'}\nGüncel Durum: ${task.status}${attachmentInfo}\n\nDetaylar için portala giriş yapın:\n${frontendUrl}`
           });
         }
       }
@@ -217,11 +219,16 @@ exports.updateTask = async (req, res) => {
   }
 };
 
-// Görev sil
+// Görev sil (dosyaları diskten de temizle)
 exports.deleteTask = async (req, res) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: 'Görev bulunamadı.' });
+
+    // Dosyaları diskten sil
+    deleteAttachmentFiles(task.attachments);
+
+    await Task.findByIdAndDelete(req.params.id);
     res.json({ message: 'Görev silindi.' });
   } catch (err) {
     res.status(500).json({ message: 'Görev silinemedi.' });

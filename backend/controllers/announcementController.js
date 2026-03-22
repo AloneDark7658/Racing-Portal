@@ -167,13 +167,27 @@ exports.updateAnnouncement = async (req, res) => {
   }
 };
 
-// --- 4. DUYURU SİL (Sadece Adminler) ---
+// --- 4. DUYURU SİL (Sadece Adminler — dosyaları diskten de temizle) ---
 exports.deleteAnnouncement = async (req, res) => {
   try {
-    const announcement = await Announcement.findByIdAndDelete(req.params.id);
+    const announcement = await Announcement.findById(req.params.id);
     if (!announcement) {
       return res.status(404).json({ message: 'Duyuru bulunamadı.' });
     }
+
+    // Dosyaları diskten sil
+    if (announcement.attachments && announcement.attachments.length > 0) {
+      announcement.attachments.forEach(f => {
+        const filePath = path.join(__dirname, '..', 'uploads', f.filename);
+        fs.unlink(filePath, (err) => {
+          if (err && err.code !== 'ENOENT') {
+            console.error(`Dosya silinemedi: ${filePath}`, err.message);
+          }
+        });
+      });
+    }
+
+    await Announcement.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: 'Duyuru silindi.' });
   } catch (error) {
     res.status(500).json({ message: 'Duyuru silinemedi.' });

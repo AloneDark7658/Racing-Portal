@@ -1,22 +1,31 @@
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto'); // YENİ: Benzersiz, tek kullanımlık şifreler üretmek için eklendi
+const crypto = require('crypto');
 const Attendance = require('../models/Attendance');
 const AttendanceSession = require('../models/AttendanceSession'); 
 const User = require('../models/User');
-const Leave = require('../models/LeaveRequest'); // Senin model adın ✅
+const Leave = require('../models/LeaveRequest');
 
-// --- YARDIMCI SENSÖR: Tarihleri UTC ile YYYY-MM-DD olarak eşleştirir (timezone tutarlılığı için) ---
+// --- YARDIMCI: Tarihleri UTC ile YYYY-MM-DD olarak eşleştirir ---
 const formatDate = (date) => {
   if (!date) return null;
   const d = new Date(date);
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 };
 
+// --- YARDIMCI: Attendance array'ini date-keyed Map'e dönüştürür (O(1) lookup) ---
+const buildDateMap = (records, dateField = 'date') => {
+  const map = new Map();
+  records.forEach(r => {
+    const key = formatDate(r[dateField]);
+    if (key) map.set(key, r);
+  });
+  return map;
+};
+
 // 1. MEVCUT OTURUMU GETİR (Admin için)
 exports.getActiveSession = async (req, res) => {
   try {
     const todayStr = formatDate(new Date());
-    // Bugünün tarihine sahip oturumu bul
     const session = await AttendanceSession.findOne({ date: new Date(todayStr) });
     
     if (!session) {
@@ -41,7 +50,6 @@ exports.generateQR = async (req, res) => {
       return res.status(200).json({ qrData: session.qrData, startTime: session.startTime, message: 'Mevcut oturum getirildi.' });
     }
 
-    // YENİ: QR'ın benzersiz (kopyalanamaz) olması için 'salt' ekledik
     const qrPayload = {
       purpose: 'itu_racing_attendance',
       date: todayStr,
@@ -68,10 +76,7 @@ exports.generateQR = async (req, res) => {
 // 3. QR OKUTMA (Üyeler için)
 exports.scanQR = async (req, res) => {
   try {
-    const { qrToken, deviceId } = req.body; // Frontend'den cihaz kimliği de gelecek
-    console.log("Gelen Token:", qrToken); // Bunu ekle
-    console.log("Gelen Cihaz ID:", deviceId); // Bunu ekle
-
+    const { qrToken, deviceId } = req.body;
 
     const userId = req.user._id;
 
@@ -82,7 +87,7 @@ exports.scanQR = async (req, res) => {
       return res.status(400).json({ message: 'Bu QR dünden kalmış veya geçersiz!' });
     }
 
-    // A) KAREKOD YANMIŞ MI KONTROLÜ (Sadece veritabanındaki güncel QR kabul edilir)
+    // A) KAREKOD YANMIŞ MI KONTROLÜ
     const session = await AttendanceSession.findOne({ date: new Date(todayStr) });
     if (!session || session.qrData !== qrToken) {
       return res.status(400).json({ 
@@ -90,14 +95,12 @@ exports.scanQR = async (req, res) => {
       });
     }
 
-    // B) CİHAZ (DEVICE ID) EŞLEŞTİRMESİ
+    // B) CİHAZ EŞLEŞTİRMESİ
     const user = await User.findById(userId);
     if (!user.deviceId) {
-      // Üye ilk kez okutuyor, cihazı mühürle
       user.deviceId = deviceId;
       await user.save();
     } else if (user.deviceId !== deviceId) {
-      // Başka telefondan kopya girişimi!
       return res.status(403).json({ 
         message: 'Güvenlik İhlali: Bu cihaz hesabınızla eşleşmiyor. Lütfen kendi telefonunuzu kullanın.' 
       });
@@ -109,7 +112,7 @@ exports.scanQR = async (req, res) => {
     let responseMessage = '';
 
     if (!attendance) {
-      // --- GİRİŞ İŞLEMİ (Eski algoritman korundu) ---
+      // --- GİRİŞ İŞLEMİ ---
       const [h, m] = session.startTime.split(':');
       const targetTime = new Date();
       targetTime.setHours(parseInt(h), parseInt(m), 0, 0);
@@ -140,13 +143,13 @@ exports.scanQR = async (req, res) => {
       responseMessage = 'Çıkış saatiniz güncellendi. İyi dinlenmeler! 🏁';
     }
 
-    // D) KAREKODU YAK VE YENİSİNİ ÜRET
+    // D) KAREKODU YAK VE YENİSİNİ ÜRET (expiresIn eklendi!)
     const newToken = jwt.sign({
       purpose: 'itu_racing_attendance',
       date: todayStr,
       startTime: session.startTime,
-      salt: crypto.randomBytes(8).toString('hex') // Karekodu değiştiren sihirli tuz
-    }, process.env.JWT_SECRET);
+      salt: crypto.randomBytes(8).toString('hex')
+    }, process.env.JWT_SECRET, { expiresIn: '12h' });
     
     session.qrData = newToken;
     await session.save();
@@ -171,17 +174,17 @@ exports.getTodayAttendance = async (req, res) => {
   }
 };
 
-// 5. LİDERLİK TABLOSU ÖZETİ (Admin İçin - N+1 SORGU OPTİMİZE EDİLDİ - FAZ 2)
+// 5. LİDERLİK TABLOSU ÖZETİ (Admin İçin - Map ile O(1) lookup)
 exports.getAttendanceSummary = async (req, res) => {
   try {
     const sessions = await AttendanceSession.find().sort({ date: 1 });
     const users = await User.find().select('name role studentId departmentId').populate('departmentId', 'name');
     
-    // TEK SORGUDA tüm yoklama ve izin kayıtlarını çek (N+1 yerine 2 sorgu)
+    // TEK SORGUDA tüm yoklama ve izin kayıtlarını çek
     const allAttendances = await Attendance.find().lean();
     const allLeaves = await Leave.find({ status: 'Onaylandı' }).lean();
 
-    // Hafızada kullanıcı bazlı grupla (Map ile O(1) erişim)
+    // Kullanıcı bazlı date-keyed Map'ler oluştur (O(1) erişim)
     const attByUser = {};
     allAttendances.forEach(a => {
       const uid = a.userId.toString();
@@ -201,11 +204,15 @@ exports.getAttendanceSummary = async (req, res) => {
       const userAtts = attByUser[uid] || [];
       const userLeaves = leaveByUser[uid] || [];
 
+      // Array.find() yerine Map kullan → O(1) lookup
+      const attMap = buildDateMap(userAtts, 'date');
+      const leaveMap = buildDateMap(userLeaves, 'requestedDate');
+
       let green = 0, yellow = 0, red = 0, leave = 0;
 
       sessions.forEach(session => {
         const sDate = formatDate(session.date);
-        const att = userAtts.find(a => formatDate(a.date) === sDate);
+        const att = attMap.get(sDate);
         
         if (att) {
           if (att.status === 'İzinli Yok') leave++;
@@ -213,7 +220,7 @@ exports.getAttendanceSummary = async (req, res) => {
           else if (att.colorCode === 'yellow' || att.colorCode === 'orange') yellow++;
           else if (att.colorCode === 'red') red++;
         } else {
-          const isOnLeave = userLeaves.find(l => formatDate(l.requestedDate) === sDate);
+          const isOnLeave = leaveMap.get(sDate);
           if (isOnLeave) leave++;
         }
       });
@@ -238,16 +245,21 @@ exports.getAttendanceSummary = async (req, res) => {
   }
 };
 
-// 6. DOLAR GRAFİĞİ İÇİN KİŞİSEL VERİ (Ortak Motor)
+// 6. KİŞİSEL GRAFİK VERİSİ (Ortak Motor — Map ile optimize edildi)
 const generateGraphData = async (userId) => {
-  const sessions = await AttendanceSession.find().sort({ date: 1 });
-  const userAttendances = await Attendance.find({ userId });
-  const userLeaves = await Leave.find({ userId, status: 'Onaylandı' });
+  const [sessions, userAttendances, userLeaves] = await Promise.all([
+    AttendanceSession.find().sort({ date: 1 }),
+    Attendance.find({ userId }),
+    Leave.find({ userId, status: 'Onaylandı' })
+  ]);
+
+  const attMap = buildDateMap(userAttendances, 'date');
+  const leaveMap = buildDateMap(userLeaves, 'requestedDate');
 
   return sessions.map(session => {
     const sDate = formatDate(session.date);
-    const record = userAttendances.find(a => formatDate(a.date) === sDate);
-    const isOnLeave = userLeaves.find(l => formatDate(l.requestedDate) === sDate);
+    const record = attMap.get(sDate);
+    const isOnLeave = leaveMap.get(sDate);
 
     let score = 0, status = 'Devamsız', delay = 0;
 
@@ -280,20 +292,25 @@ exports.getMyGraph = async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Grafik hatası.' }); }
 };
 
-// 7. SÜRÜCÜ KENDİ ÖZETİ (Dashboard Kutuları)
+// 7. SÜRÜCÜ KENDİ ÖZETİ (Dashboard Kutuları — Map ile optimize edildi)
 exports.getMySummary = async (req, res) => {
   try {
     const userId = req.user._id;
-    const sessions = await AttendanceSession.find().sort({ date: 1 });
-    const userAtts = await Attendance.find({ userId });
-    const userLeaves = await Leave.find({ userId, status: 'Onaylandı' });
+    const [sessions, userAtts, userLeaves] = await Promise.all([
+      AttendanceSession.find().sort({ date: 1 }),
+      Attendance.find({ userId }),
+      Leave.find({ userId, status: 'Onaylandı' })
+    ]);
+
+    const attMap = buildDateMap(userAtts, 'date');
+    const leaveMap = buildDateMap(userLeaves, 'requestedDate');
 
     let green = 0, yellow = 0, red = 0, leave = 0;
 
     sessions.forEach(session => {
       const sDate = formatDate(session.date);
-      const att = userAtts.find(a => formatDate(a.date) === sDate);
-      const isOnLeave = userLeaves.find(l => formatDate(l.requestedDate) === sDate);
+      const att = attMap.get(sDate);
+      const isOnLeave = leaveMap.get(sDate);
 
       if (att) {
         if (att.status === 'İzinli Yok') leave++;

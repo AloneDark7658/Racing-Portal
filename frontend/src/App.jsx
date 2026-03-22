@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import LeaveRequest from './pages/LeaveRequest';
 import AdminLeaves from './pages/AdminLeaves';
@@ -14,7 +15,6 @@ import MyPerformance from './pages/MyPerformance';
 import Profile from './pages/Profile';
 import AdminManageDevices from './pages/AdminManageDevices';
 
-// --- YENİ EKLENEN DUYURU SAYFALARI ---
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import Announcements from './pages/Announcements';
 import BottomNav from './components/BottomNav';
@@ -22,36 +22,59 @@ import AttendanceHub from './pages/AttendanceHub';
 import LeaveHub from './pages/LeaveHub';
 import TaskBoard from './pages/TaskBoard';
 
-// --- ROTA KORUMA BİLEŞENLERİ (FAZ 1) ---
-// Token yoksa kullanıcıyı login'e yönlendirir
-const ProtectedRoute = ({ children }) => {
+// --- YARDIMCI: JWT token'dan payload'u decode et (kütüphane gerektirmez) ---
+const decodeToken = (token) => {
+  try {
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+};
+
+// --- YARDIMCI: Token'dan güvenli rol kontrolü ---
+const getRoleFromToken = () => {
   const token = localStorage.getItem('token');
-  if (!token) {
+  if (!token) return null;
+  
+  const decoded = decodeToken(token);
+  if (!decoded) return null;
+  
+  // Token süresi dolmuş mu?
+  if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return null;
+  }
+  
+  return decoded.role || null;
+};
+
+// --- ROTA KORUMA BİLEŞENLERİ ---
+// Token yoksa veya süresi dolmuşsa login'e yönlendirir
+const ProtectedRoute = ({ children }) => {
+  const role = getRoleFromToken();
+  if (!role) {
     return <Navigate to="/login" replace />;
   }
   return children;
 };
 
-// Admin/Superadmin rolü yoksa dashboard'a yönlendirir
+// Admin/Superadmin rolü yoksa dashboard'a yönlendirir (JWT'den doğrulanır)
 const AdminRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  if (!token) {
+  const role = getRoleFromToken();
+  if (!role) {
     return <Navigate to="/login" replace />;
   }
-  try {
-    const userData = JSON.parse(localStorage.getItem('user'));
-    if (!userData || (userData.role !== 'admin' && userData.role !== 'superadmin')) {
-      return <Navigate to="/dashboard" replace />;
-    }
-  } catch {
-    return <Navigate to="/login" replace />;
+  if (role !== 'admin' && role !== 'superadmin') {
+    return <Navigate to="/dashboard" replace />;
   }
   return children;
 };
 
 const AppContent = () => {
   const location = useLocation();
-  const hideNavPages = ['/login', '/register', '/forgot-password'];
+  const hideNavPages = ['/login', '/register', '/forgot-password', '/verify-email'];
   const isAuthPage = hideNavPages.includes(location.pathname) || location.pathname.startsWith('/reset-password');
 
   return (
@@ -62,6 +85,7 @@ const AppContent = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* --- GİRİŞ YAPMIŞ ÜYE ROTALARI (ProtectedRoute) --- */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -74,7 +98,7 @@ const AppContent = () => {
         <Route path="/direct-scan" element={<ProtectedRoute><DirectScan /></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><TaskBoard /></ProtectedRoute>} />
 
-        {/* --- ADMİN ROTALARI (AdminRoute) --- */}
+        {/* --- ADMİN ROTALARI (AdminRoute - JWT'den doğrulanır) --- */}
         <Route path="/admin/attendance-log" element={<AdminRoute><AdminAttendanceLog /></AdminRoute>} />
         <Route path="/admin/manage-devices" element={<AdminRoute><AdminManageDevices /></AdminRoute>} />
         <Route path="/admin/qr-generate" element={<AdminRoute><AdminQR /></AdminRoute>} />

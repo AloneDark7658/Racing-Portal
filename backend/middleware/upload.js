@@ -7,8 +7,9 @@ const storage = multer.diskStorage({
     cb(null, path.join(__dirname, '..', 'uploads'));
   },
   filename: (req, file, cb) => {
-    // Benzersiz dosya adı: timestamp_orijinalAd
-    const uniqueName = Date.now() + '_' + file.originalname.replace(/\s+/g, '_');
+    // Path Traversal önlemi: Özel karakterleri temizle, sadece güvenli karakterlere izin ver
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const uniqueName = Date.now() + '_' + safeName;
     cb(null, uniqueName);
   }
 });

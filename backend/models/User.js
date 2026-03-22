@@ -8,7 +8,8 @@ const userSchema = new mongoose.Schema({
   email: { 
     type: String, 
     required: [true, 'Lütfen bir e-posta girin'], 
-    unique: true // Aynı e-posta ile iki kişi kayıt olamaz
+    unique: true,
+    match: [/^\S+@\S+\.\S+$/, 'Lütfen geçerli bir e-posta adresi girin']
   },
   password: { 
     type: String, 
@@ -21,7 +22,7 @@ const userSchema = new mongoose.Schema({
   },
   studentId: { 
     type: String,
-    unique: true // Aynı öğrenci numarasıyla iki kişi kayıt olamaz (Bunu da ekledik)
+    unique: true
   },
   departmentId: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -33,16 +34,25 @@ const userSchema = new mongoose.Schema({
     default: Date.now 
   },
 
-  // --- YENİ: Başka telefondan QR okutmayı engellemek için ---
+  // --- Başka telefondan QR okutmayı engellemek için ---
   deviceId: { 
     type: String, 
     default: null 
   },
+
+  // --- E-POSTA DOĞRULAMA ---
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationCode: {
+    type: String,
+    default: null
+  },
   
-  // --- ŞİFRE SIFIRLAMA İÇİN EKLENEN YENİ ALANLAR ---
+  // --- ŞİFRE SIFIRLAMA ---
   resetPasswordToken: String,
   resetPasswordExpire: Date
-  // ------------------------------------------------
 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -1,8 +1,8 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto'); // Rastgele şifre sıfırlama kodu üretmek için
-const sendEmail = require('../utils/sendEmail'); // Resend postacımız
+const crypto = require('crypto');
+const sendEmail = require('../utils/sendEmail');
 
 // --- KULLANICI KAYIT OLMA (REGISTER) İŞLEMİ ---
 exports.register = async (req, res) => {
@@ -15,7 +15,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Bu e-posta adresi zaten kullanımda! 📧' });
     }
 
-    // 2. Öğrenci No kontrolü (YENİ EKLENDİ)
+    // 2. Öğrenci No kontrolü
     let userByStudentId = await User.findOne({ studentId });
     if (userByStudentId) {
       return res.status(400).json({ message: 'Bu öğrenci numarası zaten kayıtlı! 🪪' });
@@ -25,18 +25,105 @@ exports.register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 4. Yeni kullanıcıyı oluştur
+    // 4. 6 haneli doğrulama kodu oluştur
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+    // 5. Yeni kullanıcıyı oluştur (doğrulanmamış olarak)
     const user = new User({
       name,
       email,
       password: hashedPassword,
-      studentId
+      studentId,
+      isVerified: false,
+      verificationCode
     });
 
     await user.save();
-    res.status(201).json({ message: 'Kullanıcı başarıyla oluşturuldu! 🎉' });
+
+    // 6. Doğrulama kodunu e-posta ile gönder
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: '📧 İTÜ Racing - E-posta Doğrulama Kodu',
+        message: `İTÜ Racing portalına hoş geldiniz!\n\nHesabınızı etkinleştirmek için aşağıdaki doğrulama kodunu kullanın:\n\n🔑 Doğrulama Kodu: ${verificationCode}\n\nBu kodu kayıt sonrası açılan doğrulama ekranına girin.\n\nEğer bu hesabı siz oluşturmadıysanız, bu e-postayı görmezden gelebilirsiniz.`
+      });
+    } catch (emailError) {
+      console.error('Doğrulama maili gönderilemedi:', emailError.message);
+    }
+
+    res.status(201).json({ 
+      message: 'Kayıt başarılı! E-postanıza gönderilen doğrulama kodunu girin. 📧',
+      requiresVerification: true,
+      email: user.email
+    });
   } catch (error) {
     console.error("Kayıt Hatası:", error.message);
+    res.status(500).json({ message: 'Sunucu hatası oluştu.' });
+  }
+};
+
+// --- E-POSTA DOĞRULAMA (VERIFY EMAIL) İŞLEMİ ---
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ message: 'E-posta ve doğrulama kodu gereklidir.' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'Bu hesap zaten doğrulanmış.' });
+    }
+
+    if (user.verificationCode !== code) {
+      return res.status(400).json({ message: 'Doğrulama kodu hatalı! Lütfen tekrar deneyin. 🚫' });
+    }
+
+    // Doğrulama başarılı
+    user.isVerified = true;
+    user.verificationCode = null;
+    await user.save();
+
+    res.status(200).json({ message: 'E-posta doğrulandı! Artık giriş yapabilirsiniz. ✅' });
+  } catch (error) {
+    console.error("Doğrulama Hatası:", error.message);
+    res.status(500).json({ message: 'Sunucu hatası oluştu.' });
+  }
+};
+
+// --- DOĞRULAMA KODUNU YENİDEN GÖNDER ---
+exports.resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'Bu hesap zaten doğrulanmış.' });
+    }
+
+    // Yeni kod oluştur
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
+    user.verificationCode = verificationCode;
+    await user.save();
+
+    await sendEmail({
+      email: user.email,
+      subject: '📧 İTÜ Racing - Yeni Doğrulama Kodu',
+      message: `Yeni doğrulama kodunuz:\n\n🔑 Doğrulama Kodu: ${verificationCode}\n\nBu kodu kayıt sonrası açılan doğrulama ekranına girin.`
+    });
+
+    res.status(200).json({ message: 'Yeni doğrulama kodu e-postanıza gönderildi! 📩' });
+  } catch (error) {
+    console.error("Yeniden gönderme hatası:", error.message);
     res.status(500).json({ message: 'Sunucu hatası oluştu.' });
   }
 };
@@ -48,12 +135,21 @@ exports.login = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'Bu e-posta ile kayıtlı kullanıcı bulunamadı!' });
+      return res.status(400).json({ message: 'E-posta veya şifre hatalı!' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Hatalı şifre girdiniz!' });
+      return res.status(400).json({ message: 'E-posta veya şifre hatalı!' });
+    }
+
+    // E-posta doğrulanmamışsa girişi engelle
+    if (!user.isVerified) {
+      return res.status(403).json({ 
+        message: 'Hesabınız henüz doğrulanmamış! Lütfen e-postanıza gönderilen doğrulama kodunu girin. 📧',
+        requiresVerification: true,
+        email: user.email
+      });
     }
 
     const payload = { id: user._id, role: user.role };
@@ -63,7 +159,7 @@ exports.login = async (req, res) => {
       message: 'Giriş başarılı! 🏎️',
       token: token,
       user: {
-        id: user._id, // Backward compatibility
+        id: user._id,
         _id: user._id,
         name: user.name,
         role: user.role,
@@ -79,25 +175,22 @@ exports.login = async (req, res) => {
 // --- ŞİFREMİ UNUTTUM (FORGOT PASSWORD) İŞLEMİ ---
 exports.forgotPassword = async (req, res) => {
   try {
-    // 1. Kullanıcıyı e-postasından bul
     const user = await User.findOne({ email: req.body.email });
     if (!user) {
       return res.status(404).json({ message: 'Bu e-posta adresiyle kayıtlı bir kullanıcı bulunamadı! 🕵️' });
     }
 
-    // 2. Rastgele güvenli bir token (şifre) oluştur
     const resetToken = crypto.randomBytes(20).toString('hex');
 
-    // 3. Bu tokeni veritabanına kaydetmek için şifrele (Güvenlik için DB'de açık tutmuyoruz)
     user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 dakika geçerlilik süresi ⏳
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 dakika
 
     await user.save();
 
-    // 4. Frontend'deki (React) şifre sıfırlama sayfamızın linkini hazırla
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    // FRONTEND_URL kontrol — tanımsızsa fallback kullan
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
-    // 5. Postacıyı (Resend) çağır ve maili yolla
     const message = `İTÜ Racing hesabınızın şifresini sıfırlamak için bir talepte bulundunuz.\n\nŞifrenizi sıfırlamak için lütfen aşağıdaki linke tıklayın (Link 10 dakika geçerlidir):\n\n${resetUrl}\n\nEğer bu talebi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.`;
 
     try {
@@ -109,7 +202,6 @@ exports.forgotPassword = async (req, res) => {
 
       res.status(200).json({ message: 'Şifre sıfırlama linki e-postanıza gönderildi! 📩 Lütfen gelen kutunuzu (ve spam klasörünü) kontrol edin.' });
     } catch (error) {
-      // Eğer mail giderken hata olursa, veritabanına yazdığımız tokenleri geri sil
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save();
@@ -126,10 +218,13 @@ exports.forgotPassword = async (req, res) => {
 // --- YENİ ŞİFREYİ KAYDETME (RESET PASSWORD) İŞLEMİ ---
 exports.resetPassword = async (req, res) => {
   try {
-    // 1. URL'den gelen tokeni al ve veritabanındaki şifrelenmiş haliyle karşılaştırmak için aynı yöntemle şifrele
+    // Şifre uzunluğu kontrolü
+    if (!req.body.password || req.body.password.length < 6) {
+      return res.status(400).json({ message: 'Yeni şifreniz en az 6 karakter uzunluğunda olmalıdır! 🔒' });
+    }
+
     const resetPasswordToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
-    // 2. Bu tokena sahip ve süresi "ŞU ANDAN DAHA İLERİ BİR SAATTE" (yani dolmamış) olan kullanıcıyı bul
     const user = await User.findOne({
       resetPasswordToken,
       resetPasswordExpire: { $gt: Date.now() }
@@ -139,11 +234,9 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Geçersiz veya süresi dolmuş bir link kullandınız! 🚫' });
     }
 
-    // 3. Kullanıcı bulunduysa, yeni şifresini al ve güvenli hale getir (Hash)
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(req.body.password, salt);
 
-    // 4. Şifre sıfırlama tokenlerini temizle (İşleri bitti)
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 

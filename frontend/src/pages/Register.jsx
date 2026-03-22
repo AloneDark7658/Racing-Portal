@@ -30,10 +30,10 @@ const Register = () => {
     }
 
     try {
-      await axios.post(`${API_URL}/auth/register`, formData);
-      toast.success('Kayıt başarılı! Giriş yapabilirsiniz.');
-      // Kayıt başarılıysa direkt Login sayfasına gönder
-      navigate('/login');
+      const { data } = await axios.post(`${API_URL}/auth/register`, formData);
+      toast.success(data.message || 'Kayıt başarılı! E-postanızı doğrulayın.');
+      // Kayıt başarılıysa doğrulama sayfasına yönlendir
+      navigate('/verify-email', { state: { email: formData.email } });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Kayıt sırasında bir hata oluştu.');
     } finally {

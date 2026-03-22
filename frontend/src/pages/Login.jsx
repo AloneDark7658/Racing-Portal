@@ -33,6 +33,12 @@ const Login = () => {
       navigate(origin);
 
     } catch (err) {
+      // Doğrulanmamış hesap → doğrulama sayfasına yönlendir
+      if (err.response?.data?.requiresVerification) {
+        toast.error(err.response.data.message);
+        navigate('/verify-email', { state: { email: err.response.data.email } });
+        return;
+      }
       toast.error(err.response?.data?.message || 'Giriş yapılamadı. Bilgileri kontrol edin.');
     } finally {
       setLoading(false);

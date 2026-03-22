@@ -4,7 +4,7 @@ const rateLimit = require('express-rate-limit');
 const { check, validationResult } = require('express-validator');
 
 // 1. Controller dosyasındaki tüm fonksiyonları içeri alıyoruz
-const { register, login, forgotPassword, resetPassword } = require('../controllers/authController');
+const { register, login, forgotPassword, resetPassword, verifyEmail, resendVerification } = require('../controllers/authController');
 
 // --- RATE LIMITER (İstek Sınırlandırma) ---
 const authLimiter = rateLimit({
@@ -13,8 +13,8 @@ const authLimiter = rateLimit({
   message: {
     message: 'Çok fazla giriş denemesi, lütfen daha sonra tekrar deneyin'
   },
-  standardHeaders: true, // `RateLimit-*` başlıklarını ekler
-  legacyHeaders: false, // `X-RateLimit-*` başlıklarını devredışı bırakır
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // --- VERİ DOĞRULAMA (Validation) ---
@@ -47,8 +47,12 @@ const loginValidation = [
 router.post('/register', authLimiter, validate(registerValidation), register);
 router.post('/login', authLimiter, validate(loginValidation), login);
 
-// --- YENİ EKLENEN ŞİFRE SIFIRLAMA ROTALARI ---
-router.post('/forgotpassword', authLimiter, forgotPassword); // FAZ 1: Rate-limit eklendi
+// --- E-POSTA DOĞRULAMA ROTALARI ---
+router.post('/verify-email', authLimiter, verifyEmail);
+router.post('/resend-verification', authLimiter, resendVerification);
+
+// --- ŞİFRE SIFIRLAMA ROTALARI ---
+router.post('/forgotpassword', authLimiter, forgotPassword);
 router.put('/resetpassword/:token', resetPassword);
 
 module.exports = router;
